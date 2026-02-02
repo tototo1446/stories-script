@@ -1,0 +1,7 @@
+{
+  "name": "StoryFlow AI - Instagram Strategy & Script Tool",
+  "description": "A high-end marketing tool for Instagram Stories that extracts winning patterns from competitors and generates high-conversion scripts based on brand identity.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

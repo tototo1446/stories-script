@@ -1,0 +1,370 @@
+app:
+  description: 競合やロールモデルのストーリーズスクショを分析し、売れる構成パターン（スケルトン）を抽出するワークフロー
+  icon: 🤖
+  icon_background: '#E4FBCC'
+  mode: workflow
+  name: ストーリーズ型分析エンジン
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/gemini:0.2.4@1dc8cd4a3198584fd7639023951f388fff023caa234a4bdb8bba69d6091c2e64
+    version: null
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: true
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: edge_1
+      source: start_1
+      sourceHandle: source
+      target: llm_analyze
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: edge_2
+      source: llm_analyze
+      sourceHandle: source
+      target: llm_skeleton
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: edge_3
+      source: llm_skeleton
+      sourceHandle: source
+      target: end_1
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 開始
+        type: start
+        variables:
+        - label: アカウント名（〇〇さん風テンプレート用）
+          max_length: 100
+          options: []
+          required: true
+          type: text-input
+          variable: account_name
+        - allowed_file_extensions: []
+          allowed_file_types:
+          - image
+          allowed_file_upload_methods:
+          - local_file
+          label: ストーリーズスクショ（5枚以上推奨）
+          max_length: 20
+          options: []
+          required: true
+          type: file-list
+          variable: screenshots
+        - label: 業種・カテゴリ（美容、健康食品、アパレル等）
+          max_length: 100
+          options: []
+          required: false
+          type: text-input
+          variable: category
+        - label: 分析の着眼点（任意）
+          max_length: 500
+          options: []
+          required: false
+          type: paragraph
+          variable: focus_point
+      height: 187
+      id: start_1
+      position:
+        x: 0
+        y: 1.3472335768656762
+      positionAbsolute:
+        x: 0
+        y: 1.3472335768656762
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.3
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 8917e1b3-60a4-49ac-b9b6-39501d362a0a
+          role: system
+          text: 'あなたはInstagramストーリーズのマーケティング分析専門家です。
+
+            アップロードされた複数のストーリーズスクショを詳細に分析してください。
+
+
+            ## 分析項目
+
+            1. **各枚の役割**: 1枚目から順に、各スライドの目的・役割を特定
+
+            2. **コピーライティング**: 使われているフック、キャッチコピー、CTA
+
+            3. **レイアウト・デザイン**: 文字の配置、背景、装飾、色使い
+
+            4. **マーケティング意図**: なぜこの順番・構成なのか、心理的効果
+
+            5. **エンゲージメント要素**: 投票、質問、スワイプアップ等の活用
+
+
+            ## 出力形式
+
+            各スライドを「1枚目」「2枚目」...と明確に区分して分析してください。
+
+            '
+        - id: 299be8e3-9483-4ca3-8721-0ae98c14c82a
+          role: user
+          text: '以下のストーリーズスクショを分析してください。
+
+
+            アカウント: {{#start_1.account_name#}}
+
+            業種: {{#start_1.category#}}
+
+            着眼点: {{#start_1.focus_point#}}
+
+            '
+        selected: false
+        structured_output_enabled: false
+        title: ストーリーズ画像分析
+        type: llm
+        vision:
+          configs:
+            detail: high
+            variable_selector:
+            - start_1
+            - screenshots
+          enabled: true
+      height: 88
+      id: llm_analyze
+      position:
+        x: 350
+        y: 0
+      positionAbsolute:
+        x: 350
+        y: 0
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: ecf61ddd-3033-41fd-b55f-b9995be7e07f
+          role: system
+          text: 'あなたはInstagramストーリーズの構成パターン（スケルトン）を抽出する専門家です。
+
+            前段の分析結果を元に、再現可能な「型」としてテンプレート化してください。
+
+
+            ## スケルトンの構造
+
+            各スライドについて以下を定義：
+
+            - **役割**: このスライドの目的（例：数字で引く、共感させる、解決策を出す、CTAを促す）
+
+            - **推奨要素**: 入れるべき要素（例：Before/After、数字、質問、矢印）
+
+            - **コピー型**: 文章の型（例：「〇〇で悩んでない？」「実は△△するだけで...」）
+
+            - **撮影/素材指示**: 背景、見せ方のアドバイス
+
+
+            ## 出力形式
+
+            JSON形式で構造化して出力してください。
+
+            '
+        - id: 3e12d301-2244-4b74-a4dc-2d04973f9750
+          role: user
+          text: '以下の分析結果から「{{#start_1.account_name#}}さん風テンプレート」を抽出してください。
+
+
+            === 分析結果 ===
+
+            {{#llm_analyze.text#}}
+
+            '
+        selected: true
+        structured_output:
+          schema:
+            additionalProperties: false
+            properties:
+              category:
+                description: 業種・カテゴリ
+                type: string
+              skeleton:
+                items:
+                  additionalProperties: false
+                  properties:
+                    copy_pattern:
+                      description: コピーの型（穴埋め形式）
+                      type: string
+                    recommended_elements:
+                      items:
+                        type: string
+                      type: array
+                    role:
+                      description: スライドの役割
+                      type: string
+                    slide_number:
+                      type: number
+                    visual_instruction:
+                      description: 撮影・素材の指示
+                      type: string
+                  required:
+                  - slide_number
+                  - role
+                  - recommended_elements
+                  - copy_pattern
+                  - visual_instruction
+                  type: object
+                type: array
+              summary:
+                properties:
+                  best_for:
+                    description: この型が適している商材・シーン
+                    type: string
+                  key_success_factors:
+                    description: この型の成功要因
+                    items:
+                      type: string
+                    type: array
+                type: object
+              template_name:
+                description: テンプレート名（〇〇さん風）
+                type: string
+              total_slides:
+                description: 推奨スライド枚数
+                type: number
+            required:
+            - template_name
+            - category
+            - total_slides
+            - skeleton
+            - summary
+            type: object
+        structured_output_enabled: true
+        title: 型（スケルトン）抽出
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: llm_skeleton
+      position:
+        x: 700
+        y: 0
+      positionAbsolute:
+        x: 700
+        y: 0
+      selected: true
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - llm_skeleton
+          - structured_output
+          - template_name
+          variable: template_name
+        - value_selector:
+          - llm_skeleton
+          - structured_output
+          variable: skeleton_data
+        - value_selector:
+          - llm_analyze
+          - text
+          variable: analysis_detail
+        selected: false
+        title: 終了
+        type: end
+      height: 140
+      id: end_1
+      position:
+        x: 1050
+        y: 0
+      positionAbsolute:
+        x: 1050
+        y: 0
+      type: custom
+      width: 242
+    viewport:
+      x: 262.5102156805492
+      y: 267.14586259794135
+      zoom: 0.7422617853145251
+  rag_pipeline_variables: []
