@@ -1,15 +1,15 @@
 import express, { Request, Response } from 'express';
 import { supabase } from '../utils/supabase';
 import { createError } from '../middleware/errorHandler';
-import { generateScriptWithDify } from '../services/difyService';
-import { rewriteScript } from '../services/geminiService';
+import { generateScript, rewriteScript } from '../services/geminiService';
 import { GenerateScriptRequest, RewriteScriptRequest, GeneratedScript, StorySlide } from '../types';
+import { checkLegalCompliance } from '../utils/legalFilter';
 
 const router = express.Router();
 
 /**
  * POST /api/scripts/generate
- * Difyワークフローを使用して台本を生成
+ * Gemini AIを使用して台本を生成
  */
 router.post('/generate', async (req: Request, res: Response, next) => {
   try {
@@ -41,12 +41,59 @@ router.post('/generate', async (req: Request, res: Response, next) => {
       throw createError('パターン情報が見つかりません', 404);
     }
 
-    // Difyワークフローを呼び出して台本生成
-    const slides = await generateScriptWithDify(
+    // 成長ログから修正傾向を抽出（差分学習エンジン）
+    let userPreferences: string | undefined;
+    try {
+      const { data: recentLogs } = await supabase
+        .from('growth_logs')
+        .select('user_modifications')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (recentLogs && recentLogs.length > 0) {
+        const trends: Record<string, number> = {};
+        for (const log of recentLogs) {
+          for (const mod of log.user_modifications || []) {
+            const origLen = (mod.original_text || '').length;
+            const modLen = (mod.modified_text || '').length;
+            if (modLen < origLen * 0.8) {
+              trends['テキストを短くする傾向'] = (trends['テキストを短くする傾向'] || 0) + 1;
+            } else if (modLen > origLen * 1.2) {
+              trends['テキストを長くする傾向'] = (trends['テキストを長くする傾向'] || 0) + 1;
+            }
+            const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+            const origEmoji = (mod.original_text || '').match(emojiRegex)?.length || 0;
+            const modEmoji = (mod.modified_text || '').match(emojiRegex)?.length || 0;
+            if (modEmoji > origEmoji) {
+              trends['絵文字を追加する傾向'] = (trends['絵文字を追加する傾向'] || 0) + 1;
+            } else if (origEmoji > modEmoji) {
+              trends['絵文字を削除する傾向'] = (trends['絵文字を削除する傾向'] || 0) + 1;
+            }
+            if (mod.original_text !== mod.modified_text) {
+              trends['文言を独自に調整する傾向'] = (trends['文言を独自に調整する傾向'] || 0) + 1;
+            }
+          }
+        }
+        const sortedTrends = Object.entries(trends)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5);
+        if (sortedTrends.length > 0) {
+          userPreferences = sortedTrends
+            .map(([trend, count]) => `- ${trend}（過去${count}回）`)
+            .join('\n');
+        }
+      }
+    } catch (err) {
+      console.warn('成長ログ取得に失敗（スキップ）:', err);
+    }
+
+    // Gemini APIで台本生成（修正傾向を反映）
+    const slides = await generateScript(
       brand,
       pattern,
       topic,
-      vibe
+      vibe,
+      userPreferences
     );
 
     // 生成された台本をデータベースに保存
@@ -74,9 +121,15 @@ router.post('/generate', async (req: Request, res: Response, next) => {
       created_at: script.created_at
     };
 
+    // 薬機法・景表法のNGワードチェック
+    const legalWarnings = checkLegalCompliance(script.slides);
+
     res.status(201).json({
       status: 'success',
-      data: generatedScript
+      data: {
+        ...generatedScript,
+        legal_warnings: legalWarnings
+      }
     });
   } catch (error: any) {
     if (error.statusCode) {
@@ -150,8 +203,9 @@ router.post('/:id/rewrite', async (req: Request, res: Response, next) => {
       throw createError('指定されたスライドが見つかりません', 404);
     }
 
-    // Gemini APIでリライト
-    const rewrittenText = await rewriteScript(slide.script, instruction);
+    // 元テキストを保持してからリライト
+    const originalText = slide.script;
+    const rewrittenText = await rewriteScript(originalText, instruction);
 
     // スライドを更新
     slide.script = rewrittenText;
@@ -173,16 +227,20 @@ router.post('/:id/rewrite', async (req: Request, res: Response, next) => {
       .insert({
         script_id: id,
         slide_id,
-        original_text: slide.script,
+        original_text: originalText,
         rewritten_text: rewrittenText,
         instruction
       });
+
+    // リライト後のリーガルチェック
+    const legalWarnings = checkLegalCompliance([slide]);
 
     res.json({
       status: 'success',
       data: {
         slide,
-        script: updatedScript
+        script: updatedScript,
+        legal_warnings: legalWarnings
       }
     });
   } catch (error: any) {

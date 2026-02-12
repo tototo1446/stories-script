@@ -32,9 +32,6 @@ npm run dev
 - `SUPABASE_URL`: SupabaseプロジェクトURL
 - `SUPABASE_KEY`: Supabase匿名キー
 - `GEMINI_API_KEY`: Google Gemini APIキー
-- `DIFY_API_KEY`: Dify APIキー
-- `DIFY_BASE_URL`: Dify APIベースURL
-- `DIFY_WORKFLOW_ID`: stories-script-generatorのワークフローID
 
 ## APIエンドポイント
 
@@ -50,7 +47,7 @@ npm run dev
 - `DELETE /api/patterns/:id` - パターン削除
 
 ### Scripts
-- `POST /api/scripts/generate` - 台本生成（Dify連携）
+- `POST /api/scripts/generate` - 台本生成（Gemini AI）
 - `POST /api/scripts/:id/rewrite` - 台本リライト
 
 ### Growth Logs

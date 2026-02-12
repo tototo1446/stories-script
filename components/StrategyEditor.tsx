@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { patternsApi } from '../services/apiClient';
 import { ApiError } from '../services/apiClient';
 import { CompetitorPattern } from '../types';
@@ -12,12 +12,13 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
   const [images, setImages] = useState<string[]>([]);
   const [competitorName, setCompetitorName] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const dragItem = useRef<number | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    // Explicitly typing 'file' as 'File' fixes the 'unknown is not assignable to Blob' error.
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -27,9 +28,41 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
     });
   };
 
+  // ドラッグ＆ドロップによる並べ替え
+  const handleDragStart = (index: number) => {
+    dragItem.current = index;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    const dragIndex = dragItem.current;
+    if (dragIndex === null || dragIndex === dropIndex) return;
+
+    const reordered = [...images];
+    const [removed] = reordered.splice(dragIndex, 1);
+    reordered.splice(dropIndex, 0, removed);
+    setImages(reordered);
+    dragItem.current = null;
+  };
+
+  const handleDragEnd = () => {
+    dragItem.current = null;
+    setDragOverIndex(null);
+  };
+
   const startAnalysis = async () => {
-    if (!competitorName || images.length < 3) {
-      alert("競合名と、少なくとも3枚以上のスクリーンショットが必要です。");
+    if (!competitorName || images.length < 5) {
+      alert("競合名と、少なくとも5枚以上のスクリーンショットが必要です。");
       return;
     }
 
@@ -41,7 +74,7 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
         category: '',
         focus_point: ''
       });
-      
+
       // APIレスポンスをCompetitorPattern形式に変換
       const pattern: CompetitorPattern = {
         id: result.id || result.data?.id || Date.now().toString(),
@@ -56,7 +89,7 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
         })) || [],
         skeleton: result.skeleton || result.data?.skeleton
       };
-      
+
       onPatternCreated(pattern);
       alert("分析が完了しました！「型」として保存されました。");
       setImages([]);
@@ -83,8 +116,8 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 space-y-6">
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">対象のアカウント名 / 競合名</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="例: @modern_kitchen_life"
             className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
             value={competitorName}
@@ -96,16 +129,37 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
           <label className="block text-sm font-bold text-slate-700 mb-2">
             ストーリーズのスクリーンショット（5〜10枚推奨）
           </label>
+          <p className="text-xs text-slate-400 mb-3">
+            <i className="fa-solid fa-arrows-up-down-left-right mr-1"></i>
+            ドラッグ＆ドロップで順番を並べ替えできます
+          </p>
           <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
             {images.map((src, idx) => (
-              <div key={idx} className="relative aspect-[9/16] rounded-xl overflow-hidden group">
+              <div
+                key={idx}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, idx)}
+                onDragEnd={handleDragEnd}
+                className={`relative aspect-[9/16] rounded-xl overflow-hidden group cursor-grab active:cursor-grabbing transition-all ${
+                  dragOverIndex === idx ? 'ring-4 ring-pink-400 scale-105' : ''
+                }`}
+              >
                 <img src={src} className="w-full h-full object-cover" alt={`Screenshot ${idx}`} />
-                <button 
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                  <span className="text-white text-xs font-bold">{idx + 1}枚目</span>
+                </div>
+                <button
                   onClick={() => setImages(images.filter((_, i) => i !== idx))}
                   className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <i className="fa-solid fa-xmark"></i>
                 </button>
+                <div className="absolute top-2 left-2 w-8 h-8 bg-black/30 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <i className="fa-solid fa-grip-vertical text-xs"></i>
+                </div>
               </div>
             ))}
             <label className="aspect-[9/16] border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
@@ -117,12 +171,12 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
         </div>
 
         <div className="pt-4">
-          <button 
+          <button
             onClick={startAnalysis}
-            disabled={analyzing || images.length < 3}
+            disabled={analyzing || images.length < 5}
             className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-3 ${
-              analyzing 
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+              analyzing
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:scale-[1.02] shadow-indigo-200'
             }`}
           >

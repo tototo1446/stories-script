@@ -10,7 +10,7 @@ const router = express.Router();
  * GET /api/patterns
  * 保存済みパターン一覧を取得
  */
-router.get('/', async (req: Request, res: Response, next) => {
+router.get('/', async (_req: Request, res: Response, next) => {
   try {
     const { data, error } = await supabase
       .from('competitor_patterns')
@@ -29,47 +29,16 @@ router.get('/', async (req: Request, res: Response, next) => {
 });
 
 /**
- * GET /api/patterns/:id
- * 特定のパターンを取得
- */
-router.get('/:id', async (req: Request, res: Response, next) => {
-  try {
-    const { id } = req.params;
-
-    const { data, error } = await supabase
-      .from('competitor_patterns')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    if (!data) {
-      throw createError('パターンが見つかりません', 404);
-    }
-
-    res.json({
-      status: 'success',
-      data
-    });
-  } catch (error: any) {
-    if (error.statusCode) {
-      next(error);
-    } else {
-      next(createError(`パターン取得に失敗しました: ${error.message}`, 500));
-    }
-  }
-});
-
-/**
  * POST /api/patterns/analyze
  * 競合のストーリーズスクショを分析してパターンを抽出
+ * NOTE: /:id より前に定義しないと "analyze" が :id としてマッチしてしまう
  */
 router.post('/analyze', async (req: Request, res: Response, next) => {
   try {
     const { account_name, category, focus_point, images }: AnalyzePatternRequest = req.body;
 
-    if (!account_name || !images || images.length < 3) {
-      throw createError('アカウント名と3枚以上の画像が必要です', 400);
+    if (!account_name || !images || images.length < 5) {
+      throw createError('アカウント名と5枚以上の画像が必要です', 400);
     }
 
     // Gemini APIでパターン分析
@@ -117,6 +86,38 @@ router.post('/analyze', async (req: Request, res: Response, next) => {
       next(error);
     } else {
       next(createError(`パターン分析に失敗しました: ${error.message}`, 500));
+    }
+  }
+});
+
+/**
+ * GET /api/patterns/:id
+ * 特定のパターンを取得
+ */
+router.get('/:id', async (req: Request, res: Response, next) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('competitor_patterns')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    if (!data) {
+      throw createError('パターンが見つかりません', 404);
+    }
+
+    res.json({
+      status: 'success',
+      data
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      next(error);
+    } else {
+      next(createError(`パターン取得に失敗しました: ${error.message}`, 500));
     }
   }
 });

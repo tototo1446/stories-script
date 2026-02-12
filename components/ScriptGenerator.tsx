@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, CompetitorPattern, BrandInfo, StorySlide, GeneratedScript } from '../types';
+import { View, CompetitorPattern, BrandInfo, StorySlide, GeneratedScript, LegalWarning } from '../types';
 import { scriptsApi, growthLogsApi } from '../services/apiClient';
 import { ApiError } from '../services/apiClient';
 
@@ -22,10 +22,11 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
   const [rewriteModalOpen, setRewriteModalOpen] = useState(false);
   const [rewriteInstruction, setRewriteInstruction] = useState('');
   const [rewriteError, setRewriteError] = useState<string | null>(null);
+  const [legalWarnings, setLegalWarnings] = useState<LegalWarning[]>([]);
 
   const handleGenerate = async () => {
-    if (!topic || topic.length < 10) {
-      alert("今日伝えたいことをもう少し詳しく（10文字以上）入力してください。");
+    if (!topic || topic.length < 100) {
+      alert("今日伝えたいことをもう少し詳しく（100文字以上）入力してください。");
       return;
     }
     
@@ -49,6 +50,7 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
       
       setResult(scriptData.slides);
       setGeneratedScriptId(scriptData.id);
+      setLegalWarnings(scriptData.legal_warnings || []);
     } catch (error: any) {
       console.error(error);
       if (error instanceof ApiError) {
@@ -140,6 +142,30 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
             やり直す
           </button>
         </header>
+
+        {legalWarnings.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <i className="fa-solid fa-triangle-exclamation text-amber-500 text-xl"></i>
+              <h3 className="font-bold text-amber-900">リーガルチェック: {legalWarnings.length}件の注意表現が検出されました</h3>
+            </div>
+            <div className="space-y-3">
+              {legalWarnings.map((w, idx) => (
+                <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl ${w.severity === 'high' ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase whitespace-nowrap ${w.severity === 'high' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {w.law}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800">
+                      Slide {w.slideId}: 「<span className={w.severity === 'high' ? 'text-red-600' : 'text-yellow-700'}>{w.matchedWord}</span>」
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">{w.suggestion}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {result.map((slide, idx) => (
@@ -378,7 +404,7 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
             onChange={(e) => setTopic(e.target.value)}
           ></textarea>
           <div className="mt-2 text-right text-xs text-slate-400">
-            {topic.length} / 10文字以上推奨
+            {topic.length} / 100文字以上
           </div>
         </div>
 
@@ -406,7 +432,7 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
       </div>
 
       <div className="text-center">
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Powered by Gemini 3 Pro</p>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Powered by Gemini 2.0 Flash</p>
       </div>
     </div>
   );

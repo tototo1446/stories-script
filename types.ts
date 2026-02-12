@@ -52,6 +52,15 @@ export interface StorySlide {
   tips: string;
 }
 
+export interface LegalWarning {
+  slideId: number;
+  text: string;
+  matchedWord: string;
+  law: '薬機法' | '景表法';
+  severity: 'high' | 'medium';
+  suggestion: string;
+}
+
 export interface GenerationResult {
   patternId: string;
   slides: StorySlide[];
