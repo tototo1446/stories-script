@@ -22,22 +22,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, savedPatterns, onPatt
     setLoading(true);
     try {
       const data = await patternsApi.getAll();
-      const convertedPatterns: CompetitorPattern[] = data.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        account_name: p.account_name,
-        category: p.category,
-        slides: p.skeleton?.skeleton?.map((s: any, idx: number) => ({
-          order: s.slide_number || idx + 1,
-          purpose: s.role || '',
-          visualGuidance: s.visual_instruction || ''
-        })) || [],
-        skeleton: p.skeleton
-      }));
-      setPatterns(convertedPatterns);
-      if (onPatternsUpdate) {
-        onPatternsUpdate(convertedPatterns);
+      if (data.length > 0) {
+        const convertedPatterns: CompetitorPattern[] = data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          account_name: p.account_name,
+          category: p.category,
+          slides: p.skeleton?.skeleton?.map((s: any, idx: number) => ({
+            order: s.slide_number || idx + 1,
+            purpose: s.role || '',
+            visualGuidance: s.visual_instruction || ''
+          })) || [],
+          skeleton: p.skeleton
+        }));
+        setPatterns(convertedPatterns);
+        if (onPatternsUpdate) {
+          onPatternsUpdate(convertedPatterns);
+        }
       }
     } catch (error: any) {
       if (error instanceof ApiError && error.statusCode !== 404) {

@@ -70,7 +70,11 @@ const BrandLibrary: React.FC<BrandLibraryProps> = ({ brandInfo, onBrandUpdate })
           target_audience: brand.targetAudience,
           brand_tone: brand.brandTone
         });
-        setBrand({ ...brand, id: data.id });
+        const createdBrand = { ...brand, id: data.id };
+        setBrand(createdBrand);
+        onBrandUpdate(createdBrand);
+        setSuccess(true);
+        return;
       }
       setSuccess(true);
       onBrandUpdate(brand);

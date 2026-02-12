@@ -7,6 +7,7 @@ import StrategyEditor from './components/StrategyEditor';
 import ScriptGenerator from './components/ScriptGenerator';
 import BrandLibrary from './components/BrandLibrary';
 import GrowthLog from './components/GrowthLog';
+import { brandsApi } from './services/apiClient';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.DASHBOARD);
@@ -16,7 +17,21 @@ const App: React.FC = () => {
     targetAudience: '仕事が忙しい20-40代の女性',
     brandTone: '丁寧で落ち着いた、専門的なアドバイス'
   });
-  
+
+  useEffect(() => {
+    brandsApi.get().then((data: any) => {
+      if (data) {
+        setBrandInfo({
+          id: data.id,
+          name: data.name,
+          productDescription: data.product_description,
+          targetAudience: data.target_audience,
+          brandTone: data.brand_tone
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
   // Initial sample data
   const [savedPatterns, setSavedPatterns] = useState<CompetitorPattern[]>([
     {
