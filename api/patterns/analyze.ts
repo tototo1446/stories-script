@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { cors } from '../_lib/cors';
-import { supabase } from '../_lib/supabase';
-import { analyzeCompetitorImages } from '../_lib/geminiService';
+import { cors } from '../_lib/cors.js';
+import { supabase } from '../_lib/supabase.js';
+import { analyzeCompetitorImages } from '../_lib/geminiService.js';
 
 export const config = {
   maxDuration: 60,

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import type { Brand, CompetitorPattern, StorySlide } from './types';
+import type { Brand, CompetitorPattern, StorySlide } from './types.js';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 

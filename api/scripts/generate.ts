@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { cors } from '../_lib/cors';
-import { supabase } from '../_lib/supabase';
-import { generateScript } from '../_lib/geminiService';
-import { checkLegalCompliance } from '../_lib/legalFilter';
+import { cors } from '../_lib/cors.js';
+import { supabase } from '../_lib/supabase.js';
+import { generateScript } from '../_lib/geminiService.js';
+import { checkLegalCompliance } from '../_lib/legalFilter.js';
 
 export const config = {
   maxDuration: 60,

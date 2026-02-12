@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { cors } from '../../_lib/cors';
-import { supabase } from '../../_lib/supabase';
-import { rewriteScript } from '../../_lib/geminiService';
-import { checkLegalCompliance } from '../../_lib/legalFilter';
-import type { StorySlide } from '../../_lib/types';
+import { cors } from '../../_lib/cors.js';
+import { supabase } from '../../_lib/supabase.js';
+import { rewriteScript } from '../../_lib/geminiService.js';
+import { checkLegalCompliance } from '../../_lib/legalFilter.js';
+import type { StorySlide } from '../../_lib/types.js';
 
 export const config = {
   maxDuration: 30,
