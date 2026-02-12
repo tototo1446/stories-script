@@ -395,7 +395,25 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-3">3. 今日伝えたいこと（箇条書きOK）</label>
+          <div className="flex items-center justify-between mb-3">
+            <label className="block text-sm font-bold text-slate-700">3. 今日伝えたいこと（箇条書きOK）</label>
+            <button
+              type="button"
+              onClick={() => {
+                const samples = [
+                  '新商品のハーブティーが届いた。カモミールとラベンダーのブレンドで香りが最高。夜寝る前に飲むとリラックスできる。初回限定30%OFFクーポンを今日から3日間配布中。DMで「ハーブ」と送ってくれた方に特別にクーポンコードをお届けします。',
+                  '今日はお客様のビフォーアフターを紹介。3ヶ月間トリートメントを続けてくださった方の変化がすごい。髪のツヤとまとまりが別人レベル。使っているのはうちのオリジナルヘアオイル。気になる方はプロフィールのリンクからチェックしてみてね。',
+                  '実はずっと悩んでいたことがあって。商品の価格設定について。高すぎると手が出ない、安すぎると価値が伝わらない。でもこだわりの原材料を使っているからこそ今の価格。その裏側を今日は正直に話します。質問があればコメントで教えてね。',
+                ];
+                const random = samples[Math.floor(Math.random() * samples.length)];
+                setTopic(random);
+              }}
+              className="px-3 py-1 bg-violet-100 text-violet-600 rounded-full text-xs font-bold hover:bg-violet-200 transition-all"
+            >
+              <i className="fa-solid fa-flask mr-1"></i>
+              サンプルを入力
+            </button>
+          </div>
           <textarea
             rows={6}
             placeholder="例：新商品のハーブティーが届いた。香りが最高でリラックス効果抜群。初回限定30%OFFクーポン配布中。夜寝る前に飲むのがおすすめ。"
