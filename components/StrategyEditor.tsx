@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { patternsApi } from '../services/apiClient';
 import { ApiError } from '../services/apiClient';
 import { CompetitorPattern } from '../types';
@@ -14,6 +14,30 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
   const [analyzing, setAnalyzing] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragItem = useRef<number | null>(null);
+
+  // クリップボードからの画像ペースト対応
+  const handlePaste = useCallback((e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImages(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [handlePaste]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -131,7 +155,9 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
           </label>
           <p className="text-xs text-slate-400 mb-3">
             <i className="fa-solid fa-arrows-up-down-left-right mr-1"></i>
-            ドラッグ＆ドロップで順番を並べ替えできます
+            ドラッグ＆ドロップで順番を並べ替えできます ／
+            <i className="fa-solid fa-paste ml-1 mr-1"></i>
+            Ctrl+V（⌘+V）で画像を貼り付けできます
           </p>
           <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
             {images.map((src, idx) => (
