@@ -56,7 +56,7 @@ export const analyzeCompetitorImages = async (
     throw createError('少なくとも5枚以上の画像が必要です', 400);
   }
 
-  const model = 'gemini-2.0-flash-exp';
+  const model = 'gemini-2.0-flash';
 
   // Convert base64 images to inline data format
   const imageParts = images.map(img => {
@@ -235,7 +235,7 @@ export const rewriteScript = async (
     throw createError('元のテキストとリライト指示が必要です', 400);
   }
 
-  const model = 'gemini-2.0-flash-exp';
+  const model = 'gemini-2.0-flash';
 
   const prompt = `以下の台本テキストを、ユーザーの指示に従ってリライトしてください。
 
@@ -277,7 +277,7 @@ export const generateScript = async (
   vibe: string,
   userPreferences?: string
 ): Promise<StorySlide[]> => {
-  const model = 'gemini-2.0-flash-exp';
+  const model = 'gemini-2.0-flash';
 
   const skeletonStr = pattern.skeleton.skeleton
     .map((s: { slide_number: number; role: string; copy_pattern: string; visual_instruction: string; recommended_elements: string[] }) =>

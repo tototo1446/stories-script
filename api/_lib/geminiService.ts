@@ -40,7 +40,7 @@ export const analyzeCompetitorImages = async (
   category?: string,
   focusPoint?: string
 ): Promise<CompetitorPattern['skeleton']> => {
-  const model = 'gemini-2.0-flash-exp';
+  const model = 'gemini-2.0-flash';
 
   const imageParts = images.map(img => {
     const base64Data = img.includes(',') ? img.split(',')[1] : img;
@@ -159,7 +159,7 @@ export const rewriteScript = async (
   originalText: string,
   instruction: string
 ): Promise<string> => {
-  const model = 'gemini-2.0-flash-exp';
+  const model = 'gemini-2.0-flash';
 
   const prompt = `以下の台本テキストを、ユーザーの指示に従ってリライトしてください。
 
@@ -187,7 +187,7 @@ export const generateScript = async (
   vibe: string,
   userPreferences?: string
 ): Promise<StorySlide[]> => {
-  const model = 'gemini-2.0-flash-exp';
+  const model = 'gemini-2.0-flash';
 
   const skeletonStr = pattern.skeleton.skeleton
     .map((s) =>
