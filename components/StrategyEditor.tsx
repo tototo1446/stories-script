@@ -201,7 +201,7 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
             onClick={startAnalysis}
             disabled={analyzing || images.length < 5}
             className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-3 ${
-              analyzing
+              analyzing || images.length < 5
                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:scale-[1.02] shadow-indigo-200'
             }`}
@@ -214,7 +214,7 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
             ) : (
               <>
                 <i className="fa-solid fa-wand-magic-sparkles"></i>
-                戦略を解析する
+                {images.length < 5 ? `戦略を解析する（あと${5 - images.length}枚必要）` : '戦略を解析する'}
               </>
             )}
           </button>
