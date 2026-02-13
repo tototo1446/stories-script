@@ -33,22 +33,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // DBからパターンを取得。見つからない場合はフロントエンドから送信されたpattern_dataを使用
+    const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pattern_id);
     let pattern: any = null;
-    const { data: dbPattern } = await supabase
-      .from('competitor_patterns')
-      .select('*')
-      .eq('id', pattern_id)
-      .single();
 
-    if (dbPattern) {
-      pattern = dbPattern;
-    } else if (pattern_data?.skeleton) {
+    if (isValidUuid) {
+      const { data: dbPattern } = await supabase
+        .from('competitor_patterns')
+        .select('*')
+        .eq('id', pattern_id)
+        .single();
+      if (dbPattern) pattern = dbPattern;
+    }
+
+    if (!pattern && pattern_data?.skeleton) {
       pattern = {
         id: pattern_id,
         name: pattern_data.name,
         skeleton: pattern_data.skeleton
       };
-    } else {
+    }
+
+    if (!pattern) {
       return res.status(404).json({ status: 'error', message: 'パターン情報が見つかりません' });
     }
 
@@ -92,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data: script, error: scriptError } = await supabase
       .from('generated_scripts')
-      .insert({ brand_id, pattern_id, topic, vibe, slides })
+      .insert({ brand_id, pattern_id: isValidUuid ? pattern_id : null, topic, vibe, slides })
       .select()
       .single();
 
