@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS brands (
   product_description TEXT NOT NULL,
   target_audience TEXT NOT NULL,
   brand_tone TEXT NOT NULL,
+  logo_url TEXT,
+  knowledge_sources JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -19,6 +21,7 @@ CREATE TABLE IF NOT EXISTS competitor_patterns (
   description TEXT NOT NULL,
   account_name TEXT NOT NULL,
   category TEXT,
+  is_favorite BOOLEAN DEFAULT FALSE,
   skeleton JSONB NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

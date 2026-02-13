@@ -19,6 +19,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ status: 'success', data });
   }
 
+  if (req.method === 'PATCH') {
+    const { is_favorite } = req.body;
+
+    const { data, error } = await supabase
+      .from('competitor_patterns')
+      .update({ is_favorite })
+      .eq('id', id as string)
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ status: 'error', message: error.message });
+    return res.json({ status: 'success', data });
+  }
+
   if (req.method === 'DELETE') {
     const { error } = await supabase
       .from('competitor_patterns')

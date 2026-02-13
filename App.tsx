@@ -6,7 +6,7 @@ import Dashboard from './components/Dashboard';
 import StrategyEditor from './components/StrategyEditor';
 import ScriptGenerator from './components/ScriptGenerator';
 import BrandLibrary from './components/BrandLibrary';
-import GrowthLog from './components/GrowthLog';
+import GrowthLogComponent from './components/GrowthLog';
 import { brandsApi, patternsApi } from './services/apiClient';
 
 const App: React.FC = () => {
@@ -106,7 +106,7 @@ const App: React.FC = () => {
           onFinish={() => setCurrentView(View.GROWTH_LOG)} 
         />;
       case View.GROWTH_LOG:
-        return <GrowthLog onNavigate={setCurrentView} />;
+        return <GrowthLogComponent onNavigate={setCurrentView} />;
       case View.BRAND_LIBRARY:
         return (
           <BrandLibrary 

@@ -116,6 +116,27 @@ export const patternsApi = {
       method: 'DELETE',
     });
   },
+
+  async create(data: {
+    name: string;
+    description: string;
+    account_name: string;
+    category?: string;
+    skeleton: any;
+    is_favorite?: boolean;
+  }): Promise<any> {
+    return request('/api/patterns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async toggleFavorite(id: string, is_favorite: boolean): Promise<any> {
+    return request(`/api/patterns/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_favorite }),
+    });
+  },
 };
 
 // Scripts API
@@ -168,6 +189,31 @@ export const growthLogsApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  async updateEngagement(id: string, engagement_metrics: {
+    impressions?: number;
+    reactions?: number;
+    dm_count?: number;
+  }): Promise<any> {
+    return request(`/api/growth-logs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ engagement_metrics }),
+    });
+  },
+};
+
+// Dashboard Stats API
+export const statsApi = {
+  async getDashboardStats(): Promise<{
+    totalImpressions: number;
+    totalReactions: number;
+    totalDmCount: number;
+    scriptCount: number;
+    impressionChange: number;
+    reactionChange: number;
+  }> {
+    return request('/api/stats');
   },
 };
 

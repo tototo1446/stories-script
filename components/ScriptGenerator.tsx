@@ -23,6 +23,26 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
   const [rewriteInstruction, setRewriteInstruction] = useState('');
   const [rewriteError, setRewriteError] = useState<string | null>(null);
   const [legalWarnings, setLegalWarnings] = useState<LegalWarning[]>([]);
+  const [finishModalOpen, setFinishModalOpen] = useState(false);
+  const [editedSlides, setEditedSlides] = useState<Record<number, string>>({});
+  const [savingLog, setSavingLog] = useState(false);
+
+  const detectChanges = (original: string, modified: string): string[] => {
+    const changes: string[] = [];
+    if (original === modified) return changes;
+    if (modified.length < original.length * 0.8) changes.push('テキストを短縮');
+    else if (modified.length > original.length * 1.2) changes.push('テキストを拡張');
+    const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+    const origEmojis = original.match(emojiRegex)?.length || 0;
+    const modEmojis = modified.match(emojiRegex)?.length || 0;
+    if (origEmojis > modEmojis) changes.push('絵文字を削除');
+    else if (modEmojis > origEmojis) changes.push('絵文字を追加');
+    const origEndings = original.match(/[！？。]$/g)?.length || 0;
+    const modEndings = modified.match(/[！？。]$/g)?.length || 0;
+    if (origEndings !== modEndings) changes.push('文末表現を変更');
+    if (changes.length === 0) changes.push('テキストを微調整');
+    return changes;
+  };
 
   const handleGenerate = async () => {
     if (!topic || topic.length < 100) {
@@ -240,26 +260,14 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
         </div>
 
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 z-50">
-          <button 
-            onClick={async () => {
-              if (generatedScriptId && result) {
-                try {
-                  // 成長ログを作成（実際の修正内容はユーザーが手動で入力する想定）
-                  await growthLogsApi.create({
-                    script_id: generatedScriptId,
-                    user_modifications: result.map((slide, idx) => ({
-                      slide_id: slide.id,
-                      original_text: slide.script,
-                      modified_text: slide.script, // 実際にはユーザーが修正したテキスト
-                      changes: []
-                    })),
-                    engagement_metrics: null
-                  });
-                } catch (error) {
-                  console.error('Failed to save growth log:', error);
-                }
+          <button
+            onClick={() => {
+              if (result) {
+                const initial: Record<number, string> = {};
+                result.forEach(slide => { initial[slide.id] = slide.script; });
+                setEditedSlides(initial);
+                setFinishModalOpen(true);
               }
-              onFinish();
             }}
             className="px-8 py-4 bg-green-500 text-white rounded-full font-bold shadow-2xl shadow-green-200 hover:scale-105 transition-all flex items-center gap-3"
           >
@@ -267,6 +275,109 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
             投稿完了・ログに保存
           </button>
         </div>
+
+        {/* 投稿完了モーダル：実際の修正テキストを入力 */}
+        {finishModalOpen && result && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900">投稿内容の記録</h3>
+                  <p className="text-sm text-slate-500 mt-1">実際に投稿したテキストに修正してください。AIが次回の生成に活かします。</p>
+                </div>
+                <button
+                  onClick={() => setFinishModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <i className="fa-solid fa-xmark text-xl"></i>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {result.map((slide) => (
+                  <div key={slide.id} className="border border-slate-200 rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600">
+                        Slide {slide.id}
+                      </span>
+                      <span className="text-xs text-pink-500 font-bold">{slide.role}</span>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-xs font-bold text-slate-400 uppercase mb-1">AI生成テキスト</div>
+                        <div className="p-3 bg-slate-50 rounded-xl text-sm text-slate-500 leading-relaxed">
+                          {slide.script}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-green-600 uppercase mb-1">実際に投稿したテキスト</div>
+                        <textarea
+                          rows={3}
+                          className="w-full p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-slate-800 leading-relaxed focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none resize-none"
+                          value={editedSlides[slide.id] || ''}
+                          onChange={(e) => setEditedSlides(prev => ({ ...prev, [slide.id]: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3 mt-8">
+                <button
+                  onClick={() => setFinishModalOpen(false)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!generatedScriptId || !result) return;
+                    setSavingLog(true);
+                    try {
+                      const modifications = result.map(slide => ({
+                        slide_id: slide.id,
+                        original_text: slide.script,
+                        modified_text: editedSlides[slide.id] || slide.script,
+                        changes: detectChanges(slide.script, editedSlides[slide.id] || slide.script)
+                      }));
+                      await growthLogsApi.create({
+                        script_id: generatedScriptId,
+                        user_modifications: modifications,
+                        engagement_metrics: null
+                      });
+                      setFinishModalOpen(false);
+                      onFinish();
+                    } catch (error) {
+                      console.error('Failed to save growth log:', error);
+                      alert('保存に失敗しました');
+                    } finally {
+                      setSavingLog(false);
+                    }
+                  }}
+                  disabled={savingLog}
+                  className={`flex-1 py-3 rounded-xl font-bold transition-all ${
+                    savingLog
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:scale-[1.02]'
+                  }`}
+                >
+                  {savingLog ? (
+                    <>
+                      <i className="fa-solid fa-circle-notch animate-spin mr-2"></i>
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check mr-2"></i>
+                      記録して完了
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* リライトモーダル */}
         {rewriteModalOpen && (

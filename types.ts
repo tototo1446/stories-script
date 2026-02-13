@@ -13,6 +13,15 @@ export interface BrandInfo {
   productDescription: string;
   targetAudience: string;
   brandTone: string;
+  logoUrl?: string;
+  knowledgeSources?: KnowledgeSource[];
+}
+
+export interface KnowledgeSource {
+  type: 'url' | 'text';
+  title: string;
+  content: string;
+  addedAt: string;
 }
 
 export interface CompetitorPattern {
@@ -21,6 +30,7 @@ export interface CompetitorPattern {
   description: string;
   account_name?: string;
   category?: string;
+  is_favorite?: boolean;
   slides: {
     order: number;
     purpose: string; // e.g., "Hook with numbers", "Empathy"
