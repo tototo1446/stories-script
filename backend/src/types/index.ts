@@ -16,7 +16,7 @@ export interface CompetitorPattern {
   account_name: string;
   category: string | null;
   skeleton: {
-    slides: Array<{
+    skeleton: Array<{
       slide_number: number;
       role: string;
       recommended_elements: string[];

@@ -279,7 +279,7 @@ export const generateScript = async (
 ): Promise<StorySlide[]> => {
   const model = 'gemini-2.0-flash-exp';
 
-  const skeletonStr = pattern.skeleton.slides
+  const skeletonStr = pattern.skeleton.skeleton
     .map((s: { slide_number: number; role: string; copy_pattern: string; visual_instruction: string; recommended_elements: string[] }) =>
       `  Slide ${s.slide_number}: 役割「${s.role}」/ コピー型「${s.copy_pattern}」/ 撮影指示「${s.visual_instruction}」/ 推奨要素: ${s.recommended_elements.join(', ')}`)
     .join('\n');
