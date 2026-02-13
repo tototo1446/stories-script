@@ -18,7 +18,38 @@ const App: React.FC = () => {
     brandTone: '丁寧で落ち着いた、専門的なアドバイス'
   });
 
-  const [savedPatterns, setSavedPatterns] = useState<CompetitorPattern[]>([]);
+  const defaultPatterns: CompetitorPattern[] = [
+    {
+      id: 'default-1',
+      name: 'ストーリー物販王道の型',
+      description: '悩みの言語化から解決策を提示し、限定性を煽って購入へ導く。',
+      slides: [
+        { order: 1, purpose: '共感フック', visualGuidance: '悩みを連想させる日常シーン' },
+        { order: 2, purpose: '問題提起', visualGuidance: 'テキスト中心の静止画' },
+        { order: 3, purpose: '解決策（商品紹介）', visualGuidance: '商品を手に取るクローズアップ' },
+        { order: 4, purpose: '使用感・証拠', visualGuidance: '実際に使用しているシーン' },
+        { order: 5, purpose: 'CTA', visualGuidance: 'リンクステッカー付きの静止画' },
+      ],
+      skeleton: {
+        template_name: 'ストーリー物販王道の型',
+        category: '物販・EC',
+        total_slides: 5,
+        skeleton: [
+          { slide_number: 1, role: '共感フック', recommended_elements: ['疑問文', '数字', '意外性'], copy_pattern: '「〇〇で悩んでいませんか？」', visual_instruction: '悩みを連想させる日常シーンの動画または写真' },
+          { slide_number: 2, role: '問題提起', recommended_elements: ['具体的な悩み', '共感ワード'], copy_pattern: '「実は〇〇が原因かも…」', visual_instruction: 'テキスト中心のシンプルな背景' },
+          { slide_number: 3, role: '解決策（商品紹介）', recommended_elements: ['商品名', '特徴', 'ベネフィット'], copy_pattern: '「そんな方におすすめなのが〇〇」', visual_instruction: '商品のクローズアップ、手に取っているシーン' },
+          { slide_number: 4, role: '使用感・証拠', recommended_elements: ['体験談', 'ビフォーアフター', '口コミ'], copy_pattern: '「使ってみたら〇〇が変わった！」', visual_instruction: '実際に使用しているシーンや変化がわかる写真' },
+          { slide_number: 5, role: 'CTA', recommended_elements: ['限定性', '行動喚起', 'リンクステッカー'], copy_pattern: '「今だけ〇〇！リンクはここから」', visual_instruction: 'リンクステッカー付き、目立つ背景色の静止画' },
+        ],
+        summary: {
+          best_for: '物販・EC商品の販売促進ストーリーズ',
+          key_success_factors: ['冒頭の共感フックで離脱を防ぐ', '商品ベネフィットを具体的に伝える', 'CTAで明確な行動を促す']
+        }
+      }
+    }
+  ];
+
+  const [savedPatterns, setSavedPatterns] = useState<CompetitorPattern[]>(defaultPatterns);
 
   useEffect(() => {
     brandsApi.get().then((data: any) => {
@@ -48,7 +79,7 @@ const App: React.FC = () => {
           })) || [],
           skeleton: p.skeleton
         }));
-        setSavedPatterns(convertedPatterns);
+        setSavedPatterns([...defaultPatterns, ...convertedPatterns]);
       }
     }).catch(() => {});
   }, []);

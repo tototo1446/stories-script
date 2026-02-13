@@ -48,7 +48,11 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
         brand_id: brandInfo.id,
         pattern_id: selectedPatternId,
         topic,
-        vibe
+        vibe,
+        pattern_data: pattern.skeleton ? {
+          name: pattern.name,
+          skeleton: pattern.skeleton
+        } : undefined
       });
       
       setResult(scriptData.slides);

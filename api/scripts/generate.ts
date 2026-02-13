@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { brand_id, pattern_id, topic, vibe } = req.body;
+    const { brand_id, pattern_id, topic, vibe, pattern_data } = req.body;
 
     if (!brand_id || !pattern_id || !topic || !vibe) {
       return res.status(400).json({ status: 'error', message: 'brand_id, pattern_id, topic, vibe は必須です' });
@@ -32,13 +32,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ status: 'error', message: 'ブランド情報が見つかりません' });
     }
 
-    const { data: pattern, error: patternError } = await supabase
+    // DBからパターンを取得。見つからない場合はフロントエンドから送信されたpattern_dataを使用
+    let pattern: any = null;
+    const { data: dbPattern } = await supabase
       .from('competitor_patterns')
       .select('*')
       .eq('id', pattern_id)
       .single();
 
-    if (patternError || !pattern) {
+    if (dbPattern) {
+      pattern = dbPattern;
+    } else if (pattern_data?.skeleton) {
+      pattern = {
+        id: pattern_id,
+        name: pattern_data.name,
+        skeleton: pattern_data.skeleton
+      };
+    } else {
       return res.status(404).json({ status: 'error', message: 'パターン情報が見つかりません' });
     }
 

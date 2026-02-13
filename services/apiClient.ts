@@ -125,6 +125,10 @@ export const scriptsApi = {
     pattern_id: string;
     topic: string;
     vibe: string;
+    pattern_data?: {
+      name: string;
+      skeleton: any;
+    };
   }): Promise<any> {
     return request('/api/scripts/generate', {
       method: 'POST',
