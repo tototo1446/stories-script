@@ -36,7 +36,10 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
     }
 
     const pattern = patterns.find(p => p.id === selectedPatternId);
-    if (!pattern) return;
+    if (!pattern) {
+      alert("パターン（型）を先に作成してください。競合分析から型を抽出できます。");
+      return;
+    }
 
     setGenerating(true);
     setRewriteError(null);

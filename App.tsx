@@ -7,7 +7,7 @@ import StrategyEditor from './components/StrategyEditor';
 import ScriptGenerator from './components/ScriptGenerator';
 import BrandLibrary from './components/BrandLibrary';
 import GrowthLog from './components/GrowthLog';
-import { brandsApi } from './services/apiClient';
+import { brandsApi, patternsApi } from './services/apiClient';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.DASHBOARD);
@@ -17,6 +17,8 @@ const App: React.FC = () => {
     targetAudience: '仕事が忙しい20-40代の女性',
     brandTone: '丁寧で落ち着いた、専門的なアドバイス'
   });
+
+  const [savedPatterns, setSavedPatterns] = useState<CompetitorPattern[]>([]);
 
   useEffect(() => {
     brandsApi.get().then((data: any) => {
@@ -30,21 +32,26 @@ const App: React.FC = () => {
         });
       }
     }).catch(() => {});
-  }, []);
 
-  // Initial sample data
-  const [savedPatterns, setSavedPatterns] = useState<CompetitorPattern[]>([
-    {
-      id: 'default-1',
-      name: 'ストーリー物販王道の型',
-      description: '悩みの言語化から解決策を提示し、限定性を煽って購入へ導く。',
-      slides: [
-        { order: 1, purpose: '共感の呼びかけ', visualGuidance: '夕方のリラックスタイムの動画' },
-        { order: 2, purpose: '商品紹介', visualGuidance: 'お湯を注ぐ手元のアップ' },
-        { order: 3, purpose: 'CTA', visualGuidance: 'リンクステッカー付きの静止画' },
-      ]
-    }
-  ]);
+    patternsApi.getAll().then((data: any[]) => {
+      if (data.length > 0) {
+        const convertedPatterns: CompetitorPattern[] = data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          account_name: p.account_name,
+          category: p.category,
+          slides: p.skeleton?.skeleton?.map((s: any, idx: number) => ({
+            order: s.slide_number || idx + 1,
+            purpose: s.role || '',
+            visualGuidance: s.visual_instruction || ''
+          })) || [],
+          skeleton: p.skeleton
+        }));
+        setSavedPatterns(convertedPatterns);
+      }
+    }).catch(() => {});
+  }, []);
 
   const handlePatternCreated = (pattern: CompetitorPattern) => {
     setSavedPatterns(prev => [pattern, ...prev]);
