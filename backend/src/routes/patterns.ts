@@ -37,8 +37,8 @@ router.post('/analyze', async (req: Request, res: Response, next) => {
   try {
     const { account_name, category, focus_point, images }: AnalyzePatternRequest = req.body;
 
-    if (!account_name || !images || images.length < 5) {
-      throw createError('アカウント名と5枚以上の画像が必要です', 400);
+    if (!account_name || !images || images.length < 1) {
+      throw createError('アカウント名と1枚以上の画像が必要です', 400);
     }
 
     // Gemini APIでパターン分析

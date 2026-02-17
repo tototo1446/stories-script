@@ -85,8 +85,8 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
   };
 
   const startAnalysis = async () => {
-    if (!competitorName || images.length < 5) {
-      alert("競合名と、少なくとも5枚以上のスクリーンショットが必要です。");
+    if (!competitorName || images.length < 1) {
+      alert("競合名と、少なくとも1枚以上のスクリーンショットが必要です。");
       return;
     }
 
@@ -151,7 +151,7 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
 
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">
-            ストーリーズのスクリーンショット（5〜10枚推奨）
+            ストーリーズのスクリーンショット（1〜10枚・複数枚推奨）
           </label>
           <p className="text-xs text-slate-400 mb-3">
             <i className="fa-solid fa-arrows-up-down-left-right mr-1"></i>
@@ -199,9 +199,9 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
         <div className="pt-4">
           <button
             onClick={startAnalysis}
-            disabled={analyzing || images.length < 5}
+            disabled={analyzing || images.length < 1}
             className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-3 ${
-              analyzing || images.length < 5
+              analyzing || images.length < 1
                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:scale-[1.02] shadow-indigo-200'
             }`}
@@ -214,7 +214,7 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
             ) : (
               <>
                 <i className="fa-solid fa-wand-magic-sparkles"></i>
-                {images.length < 5 ? `戦略を解析する（あと${5 - images.length}枚必要）` : '戦略を解析する'}
+                {images.length < 1 ? '戦略を解析する（画像をアップロードしてください）' : `戦略を解析する（${images.length}枚）`}
               </>
             )}
           </button>

@@ -7,6 +7,7 @@ import StrategyEditor from './components/StrategyEditor';
 import ScriptGenerator from './components/ScriptGenerator';
 import BrandLibrary from './components/BrandLibrary';
 import GrowthLogComponent from './components/GrowthLog';
+import ScriptHistory from './components/ScriptHistory';
 import { brandsApi, patternsApi } from './services/apiClient';
 
 const App: React.FC = () => {
@@ -105,6 +106,8 @@ const App: React.FC = () => {
           patterns={savedPatterns} 
           onFinish={() => setCurrentView(View.GROWTH_LOG)} 
         />;
+      case View.SCRIPT_HISTORY:
+        return <ScriptHistory onNavigate={setCurrentView} />;
       case View.GROWTH_LOG:
         return <GrowthLogComponent onNavigate={setCurrentView} />;
       case View.BRAND_LIBRARY:
@@ -142,6 +145,10 @@ const App: React.FC = () => {
         <button onClick={() => setCurrentView(View.STRATEGY_EDITOR)} className={`flex flex-col items-center gap-1 ${currentView === View.STRATEGY_EDITOR ? 'text-pink-500' : 'text-slate-400'}`}>
           <i className="fa-solid fa-brain"></i>
           <span className="text-[10px] font-bold">AI</span>
+        </button>
+        <button onClick={() => setCurrentView(View.SCRIPT_HISTORY)} className={`flex flex-col items-center gap-1 ${currentView === View.SCRIPT_HISTORY ? 'text-pink-500' : 'text-slate-400'}`}>
+          <i className="fa-solid fa-clock-rotate-left"></i>
+          <span className="text-[10px] font-bold">History</span>
         </button>
         <button onClick={() => setCurrentView(View.BRAND_LIBRARY)} className={`flex flex-col items-center gap-1 ${currentView === View.BRAND_LIBRARY ? 'text-pink-500' : 'text-slate-400'}`}>
           <i className="fa-solid fa-user"></i>

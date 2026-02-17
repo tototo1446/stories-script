@@ -141,6 +141,11 @@ export const patternsApi = {
 
 // Scripts API
 export const scriptsApi = {
+  async getAll(): Promise<any[]> {
+    const result = await request<{ data: any[] }>('/api/scripts');
+    return Array.isArray(result) ? result : result.data || [];
+  },
+
   async generate(data: {
     brand_id: string;
     pattern_id: string;

@@ -17,8 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { account_name, category, focus_point, images } = req.body;
 
-    if (!account_name || !images || images.length < 5) {
-      return res.status(400).json({ status: 'error', message: 'アカウント名と5枚以上の画像が必要です' });
+    if (!account_name || !images || images.length < 1) {
+      return res.status(400).json({ status: 'error', message: 'アカウント名と1枚以上の画像が必要です' });
     }
 
     const skeleton = await analyzeCompetitorImages(images, account_name, category, focus_point);
