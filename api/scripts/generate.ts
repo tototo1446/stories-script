@@ -96,42 +96,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const slides = await generateScript(brand, pattern, topic, vibe, userPreferences);
     const legalWarnings = checkLegalCompliance(slides);
 
-    // DBパターン使用時のみ生成結果を保存（デフォルトパターンはUUIDでないため保存スキップ）
-    if (isValidUuid) {
-      const { data: script, error: scriptError } = await supabase
-        .from('generated_scripts')
-        .insert({ brand_id, pattern_id, topic, vibe, slides })
-        .select()
-        .single();
+    // 常にDBに保存（デフォルトパターン使用時はpattern_idをnullにする）
+    const { data: script, error: scriptError } = await supabase
+      .from('generated_scripts')
+      .insert({
+        brand_id,
+        pattern_id: isValidUuid ? pattern_id : null,
+        topic,
+        vibe,
+        slides
+      })
+      .select()
+      .single();
 
-      if (scriptError) throw scriptError;
+    if (scriptError) throw scriptError;
 
-      return res.status(201).json({
-        status: 'success',
-        data: {
-          id: script.id,
-          brand_id: script.brand_id,
-          pattern_id: script.pattern_id,
-          topic: script.topic,
-          vibe: script.vibe,
-          slides: script.slides,
-          created_at: script.created_at,
-          legal_warnings: legalWarnings
-        }
-      });
-    }
-
-    // デフォルトパターン使用時はDB保存せずに直接返す
     return res.status(201).json({
       status: 'success',
       data: {
-        id: null,
-        brand_id,
-        pattern_id,
-        topic,
-        vibe,
-        slides,
-        created_at: new Date().toISOString(),
+        id: script.id,
+        brand_id: script.brand_id,
+        pattern_id: script.pattern_id,
+        topic: script.topic,
+        vibe: script.vibe,
+        slides: script.slides,
+        created_at: script.created_at,
         legal_warnings: legalWarnings
       }
     });

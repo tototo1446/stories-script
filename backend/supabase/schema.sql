@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS competitor_patterns (
 CREATE TABLE IF NOT EXISTS generated_scripts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
-  pattern_id UUID NOT NULL REFERENCES competitor_patterns(id) ON DELETE CASCADE,
+  pattern_id UUID REFERENCES competitor_patterns(id) ON DELETE SET NULL,
   topic TEXT NOT NULL,
   vibe TEXT NOT NULL,
   slides JSONB NOT NULL,
