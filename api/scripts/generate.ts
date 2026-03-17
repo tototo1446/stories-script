@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from '../_lib/cors.js';
 import { supabase } from '../_lib/supabase.js';
-import { generateScript } from '../_lib/geminiService.js';
+import { generateScript, selectBestPattern } from '../_lib/geminiService.js';
 import { checkLegalCompliance } from '../_lib/legalFilter.js';
 
 export const config = {
@@ -16,10 +16,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { brand_id, pattern_id, topic, vibe, pattern_data } = req.body;
+    const { brand_id, pattern_id, topic, vibe, pattern_data, auto_select, candidate_pattern_ids } = req.body;
 
-    if (!brand_id || !pattern_id || !topic || !vibe) {
-      return res.status(400).json({ status: 'error', message: 'brand_id, pattern_id, topic, vibe は必須です' });
+    if (!brand_id || !topic || !vibe) {
+      return res.status(400).json({ status: 'error', message: 'brand_id, topic, vibe は必須です' });
+    }
+
+    if (!auto_select && !pattern_id) {
+      return res.status(400).json({ status: 'error', message: 'pattern_id または auto_select=true が必要です' });
     }
 
     const { data: brand, error: brandError } = await supabase
@@ -32,25 +36,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ status: 'error', message: 'ブランド情報が見つかりません' });
     }
 
-    // DBからパターンを取得。見つからない場合はフロントエンドから送信されたpattern_dataを使用
-    const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pattern_id);
     let pattern: any = null;
+    let autoSelectedPattern: { name: string; reason: string } | null = null;
 
-    if (isValidUuid) {
-      const { data: dbPattern } = await supabase
+    if (auto_select && candidate_pattern_ids?.length > 0) {
+      // auto_select モード: 候補パターンを一括取得してAIに選ばせる
+      const { data: candidates, error: candError } = await supabase
         .from('competitor_patterns')
         .select('*')
-        .eq('id', pattern_id)
-        .single();
-      if (dbPattern) pattern = dbPattern;
-    }
+        .in('id', candidate_pattern_ids);
 
-    if (!pattern && pattern_data?.skeleton) {
-      pattern = {
-        id: pattern_id,
-        name: pattern_data.name,
-        skeleton: pattern_data.skeleton
+      if (candError || !candidates || candidates.length === 0) {
+        return res.status(404).json({ status: 'error', message: '候補パターンが見つかりません' });
+      }
+
+      const selection = await selectBestPattern(candidates, topic);
+      pattern = candidates.find((c: any) => c.id === selection.selectedPatternId) || candidates[0];
+      autoSelectedPattern = {
+        name: selection.selectedPatternName,
+        reason: selection.reason
       };
+    } else {
+      // 従来モード: pattern_id で直接指定
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pattern_id);
+
+      if (isValidUuid) {
+        const { data: dbPattern } = await supabase
+          .from('competitor_patterns')
+          .select('*')
+          .eq('id', pattern_id)
+          .single();
+        if (dbPattern) pattern = dbPattern;
+      }
+
+      if (!pattern && pattern_data?.skeleton) {
+        pattern = {
+          id: pattern_id,
+          name: pattern_data.name,
+          skeleton: pattern_data.skeleton
+        };
+      }
     }
 
     if (!pattern) {
@@ -96,12 +121,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const slides = await generateScript(brand, pattern, topic, vibe, userPreferences);
     const legalWarnings = checkLegalCompliance(slides);
 
-    // 常にDBに保存（デフォルトパターン使用時はpattern_idをnullにする）
+    // 常にDBに保存（pattern.idがUUIDなら保存、それ以外はnull）
+    const savedPatternId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pattern.id)
+      ? pattern.id : null;
+
     const { data: script, error: scriptError } = await supabase
       .from('generated_scripts')
       .insert({
         brand_id,
-        pattern_id: isValidUuid ? pattern_id : null,
+        pattern_id: savedPatternId,
         topic,
         vibe,
         slides
@@ -111,18 +139,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (scriptError) throw scriptError;
 
+    const responseData: any = {
+      id: script.id,
+      brand_id: script.brand_id,
+      pattern_id: script.pattern_id,
+      topic: script.topic,
+      vibe: script.vibe,
+      slides: script.slides,
+      created_at: script.created_at,
+      legal_warnings: legalWarnings
+    };
+
+    if (autoSelectedPattern) {
+      responseData.auto_selected_pattern = autoSelectedPattern;
+    }
+
     return res.status(201).json({
       status: 'success',
-      data: {
-        id: script.id,
-        brand_id: script.brand_id,
-        pattern_id: script.pattern_id,
-        topic: script.topic,
-        vibe: script.vibe,
-        slides: script.slides,
-        created_at: script.created_at,
-        legal_warnings: legalWarnings
-      }
+      data: responseData
     });
   } catch (error: any) {
     console.error('Script generation error:', error);

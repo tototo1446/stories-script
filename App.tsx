@@ -73,6 +73,7 @@ const App: React.FC = () => {
           description: p.description,
           account_name: p.account_name,
           category: p.category,
+          capture_date: p.capture_date,
           slides: p.skeleton?.skeleton?.map((s: any, idx: number) => ({
             order: s.slide_number || idx + 1,
             purpose: s.role || '',

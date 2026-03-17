@@ -104,11 +104,17 @@ export const patternsApi = {
     category?: string;
     focus_point?: string;
     images: string[];
+    capture_date?: string;
   }): Promise<any> {
     return request('/api/patterns/analyze', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  async getByAccount(accountName: string): Promise<any[]> {
+    const result = await request<{ data: any[] }>(`/api/patterns?account_name=${encodeURIComponent(accountName)}`);
+    return Array.isArray(result) ? result : result.data || [];
   },
 
   async delete(id: string): Promise<void> {
@@ -148,13 +154,15 @@ export const scriptsApi = {
 
   async generate(data: {
     brand_id: string;
-    pattern_id: string;
+    pattern_id?: string;
     topic: string;
     vibe: string;
     pattern_data?: {
       name: string;
       skeleton: any;
     };
+    auto_select?: boolean;
+    candidate_pattern_ids?: string[];
   }): Promise<any> {
     return request('/api/scripts/generate', {
       method: 'POST',

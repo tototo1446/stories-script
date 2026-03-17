@@ -14,6 +14,9 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
   const [analyzing, setAnalyzing] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragItem = useRef<number | null>(null);
+  const [captureDate, setCaptureDate] = useState(new Date().toISOString().split('T')[0]);
+  const [existingPatterns, setExistingPatterns] = useState<{ capture_date: string; name: string }[]>([]);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // クリップボードからの画像ペースト対応
   const handlePaste = useCallback((e: ClipboardEvent) => {
@@ -38,6 +41,27 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
   }, [handlePaste]);
+
+  // アカウント名変更時にdebounce付きで既存パターンを取得
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    if (!competitorName.trim()) {
+      setExistingPatterns([]);
+      return;
+    }
+    debounceTimer.current = setTimeout(async () => {
+      try {
+        const patterns = await patternsApi.getByAccount(competitorName.trim());
+        const uniqueDates = patterns
+          .filter((p: any) => p.capture_date)
+          .map((p: any) => ({ capture_date: p.capture_date, name: p.name }));
+        setExistingPatterns(uniqueDates);
+      } catch {
+        setExistingPatterns([]);
+      }
+    }, 500);
+    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+  }, [competitorName]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -96,7 +120,8 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
         account_name: competitorName,
         images: images,
         category: '',
-        focus_point: ''
+        focus_point: '',
+        capture_date: captureDate
       });
 
       // APIレスポンスをCompetitorPattern形式に変換
@@ -106,6 +131,7 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
         description: result.description || result.data?.description || '',
         account_name: result.account_name || result.data?.account_name || competitorName,
         category: result.category || result.data?.category,
+        capture_date: result.capture_date || result.data?.capture_date || captureDate,
         slides: result.skeleton?.skeleton?.map((s: any, idx: number) => ({
           order: s.slide_number || idx + 1,
           purpose: s.role || '',
@@ -146,6 +172,29 @@ const StrategyEditor: React.FC<StrategyEditorProps> = ({ onPatternCreated }) => 
             className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
             value={competitorName}
             onChange={(e) => setCompetitorName(e.target.value)}
+          />
+          {existingPatterns.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                <i className="fa-solid fa-database mr-1"></i>
+                分析済み: {new Set(existingPatterns.map(p => p.capture_date)).size}日分
+              </span>
+              {[...new Set(existingPatterns.map(p => p.capture_date))].map(date => (
+                <span key={date} className="px-2 py-1 bg-slate-100 text-slate-500 rounded-full text-[11px] font-bold">
+                  {new Date(date + 'T00:00:00').toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-2">この投稿の日付</label>
+          <input
+            type="date"
+            className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
+            value={captureDate}
+            onChange={(e) => setCaptureDate(e.target.value)}
           />
         </div>
 

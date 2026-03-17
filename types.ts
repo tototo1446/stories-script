@@ -32,6 +32,7 @@ export interface CompetitorPattern {
   account_name?: string;
   category?: string;
   is_favorite?: boolean;
+  capture_date?: string;
   slides: {
     order: number;
     purpose: string; // e.g., "Hook with numbers", "Empathy"

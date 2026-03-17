@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { account_name, category, focus_point, images } = req.body;
+    const { account_name, category, focus_point, images, capture_date } = req.body;
 
     if (!account_name || !images || images.length < 1) {
       return res.status(400).json({ status: 'error', message: 'アカウント名と1枚以上の画像が必要です' });
@@ -28,7 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       description: skeleton.summary.best_for,
       account_name,
       category: category || skeleton.category,
-      skeleton
+      skeleton,
+      capture_date: capture_date || new Date().toISOString().split('T')[0]
     };
 
     const { data, error } = await supabase
@@ -47,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         description: data.description,
         account_name: data.account_name,
         category: data.category,
+        capture_date: data.capture_date,
         skeleton: data.skeleton,
         created_at: data.created_at,
         updated_at: data.updated_at

@@ -58,7 +58,12 @@ CREATE TABLE IF NOT EXISTS growth_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Add capture_date to competitor_patterns (migration)
+ALTER TABLE competitor_patterns ADD COLUMN IF NOT EXISTS capture_date DATE DEFAULT CURRENT_DATE;
+UPDATE competitor_patterns SET capture_date = created_at::date WHERE capture_date IS NULL;
+
 -- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_competitor_patterns_account_date ON competitor_patterns(account_name, capture_date DESC);
 CREATE INDEX IF NOT EXISTS idx_generated_scripts_brand_id ON generated_scripts(brand_id);
 CREATE INDEX IF NOT EXISTS idx_generated_scripts_pattern_id ON generated_scripts(pattern_id);
 CREATE INDEX IF NOT EXISTS idx_generated_scripts_created_at ON generated_scripts(created_at DESC);

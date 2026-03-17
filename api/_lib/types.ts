@@ -14,6 +14,7 @@ export interface CompetitorPattern {
   description: string;
   account_name: string;
   category: string | null;
+  capture_date: string | null;
   skeleton: {
     skeleton: Array<{
       slide_number: number;

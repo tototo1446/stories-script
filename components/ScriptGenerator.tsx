@@ -26,6 +26,9 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
   const [finishModalOpen, setFinishModalOpen] = useState(false);
   const [editedSlides, setEditedSlides] = useState<Record<number, string>>({});
   const [savingLog, setSavingLog] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<'auto' | 'manual'>('auto');
+  const [selectedAccountFilter, setSelectedAccountFilter] = useState<string | null>(null);
+  const [autoSelectedInfo, setAutoSelectedInfo] = useState<{ name: string; reason: string } | null>(null);
 
   const detectChanges = (original: string, modified: string): string[] => {
     const changes: string[] = [];
@@ -44,37 +47,80 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
     return changes;
   };
 
+  // アカウントごとにパターンをグルーピング
+  const accountGroups: Record<string, CompetitorPattern[]> = {};
+  patterns.forEach(p => {
+    if (p.account_name) {
+      if (!accountGroups[p.account_name]) accountGroups[p.account_name] = [];
+      accountGroups[p.account_name].push(p);
+    }
+  });
+
+  // auto_select 時の候補パターンIDを取得
+  const getCandidatePatternIds = (): string[] => {
+    if (selectedAccountFilter) {
+      return (accountGroups[selectedAccountFilter] || []).map(p => p.id);
+    }
+    // DB保存済みパターンのみ（default-* はUUIDではないので除外）
+    return patterns
+      .filter(p => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id))
+      .map(p => p.id);
+  };
+
   const handleGenerate = async () => {
     if (!topic || topic.length < 100) {
       alert("今日伝えたいことをもう少し詳しく（100文字以上）入力してください。");
       return;
     }
-    
+
     if (!brandInfo.id) {
       alert("ブランド情報を先に設定してください。");
       return;
     }
 
-    const pattern = patterns.find(p => p.id === selectedPatternId);
-    if (!pattern) {
-      alert("パターン（型）を先に作成してください。競合分析から型を抽出できます。");
-      return;
-    }
-
     setGenerating(true);
     setRewriteError(null);
+    setAutoSelectedInfo(null);
+
     try {
-      const scriptData = await scriptsApi.generate({
-        brand_id: brandInfo.id,
-        pattern_id: selectedPatternId,
-        topic,
-        vibe,
-        pattern_data: pattern.skeleton ? {
-          name: pattern.name,
-          skeleton: pattern.skeleton
-        } : undefined
-      });
-      
+      let scriptData: any;
+
+      if (selectionMode === 'auto') {
+        const candidateIds = getCandidatePatternIds();
+        if (candidateIds.length === 0) {
+          alert("AIおまかせ選択に使える型がありません。先に競合分析で型を作成してください。");
+          setGenerating(false);
+          return;
+        }
+        scriptData = await scriptsApi.generate({
+          brand_id: brandInfo.id,
+          topic,
+          vibe,
+          auto_select: true,
+          candidate_pattern_ids: candidateIds
+        });
+        if (scriptData.auto_selected_pattern) {
+          setAutoSelectedInfo(scriptData.auto_selected_pattern);
+        }
+      } else {
+        const pattern = patterns.find(p => p.id === selectedPatternId);
+        if (!pattern) {
+          alert("パターン（型）を先に作成してください。競合分析から型を抽出できます。");
+          setGenerating(false);
+          return;
+        }
+        scriptData = await scriptsApi.generate({
+          brand_id: brandInfo.id,
+          pattern_id: selectedPatternId,
+          topic,
+          vibe,
+          pattern_data: pattern.skeleton ? {
+            name: pattern.name,
+            skeleton: pattern.skeleton
+          } : undefined
+        });
+      }
+
       setResult(scriptData.slides);
       setGeneratedScriptId(scriptData.id);
       setLegalWarnings(scriptData.legal_warnings || []);
@@ -162,13 +208,25 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
             <h2 className="text-2xl font-bold text-slate-900">生成された台本</h2>
             <p className="text-slate-500">全{result.length}枚の構成案です。</p>
           </div>
-          <button 
-            onClick={() => setResult(null)}
+          <button
+            onClick={() => { setResult(null); setAutoSelectedInfo(null); }}
             className="text-slate-400 font-bold hover:text-slate-600"
           >
             やり直す
           </button>
         </header>
+
+        {autoSelectedInfo && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 flex items-start gap-3">
+            <i className="fa-solid fa-wand-magic-sparkles text-indigo-500 text-lg mt-0.5"></i>
+            <div>
+              <p className="font-bold text-indigo-900 text-sm">
+                AIが選んだ型: {autoSelectedInfo.name}
+              </p>
+              <p className="text-indigo-600 text-xs mt-1">{autoSelectedInfo.reason}</p>
+            </div>
+          </div>
+        )}
 
         {legalWarnings.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
@@ -474,23 +532,92 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
 
       <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 space-y-8">
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-3">1. どの「型」を適用しますか？</label>
-          <div className="grid grid-cols-2 gap-3">
-            {patterns.map(p => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedPatternId(p.id)}
-                className={`px-4 py-3 rounded-2xl text-left border-2 transition-all ${
-                  selectedPatternId === p.id 
-                    ? 'border-pink-500 bg-pink-50 text-pink-700' 
-                    : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
-                }`}
-              >
-                <div className="text-xs font-black opacity-50 mb-1">PATTERN</div>
-                <div className="font-bold text-sm line-clamp-1">{p.name}</div>
-              </button>
-            ))}
+          <label className="block text-sm font-bold text-slate-700 mb-3">1. 型の選び方</label>
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setSelectionMode('auto')}
+              className={`flex-1 px-4 py-3 rounded-2xl text-sm font-bold transition-all border-2 ${
+                selectionMode === 'auto'
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                  : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+              }`}
+            >
+              <i className="fa-solid fa-wand-magic-sparkles mr-2"></i>
+              おまかせ（AI自動選択）
+            </button>
+            <button
+              onClick={() => setSelectionMode('manual')}
+              className={`flex-1 px-4 py-3 rounded-2xl text-sm font-bold transition-all border-2 ${
+                selectionMode === 'manual'
+                  ? 'border-pink-500 bg-pink-50 text-pink-700'
+                  : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+              }`}
+            >
+              <i className="fa-solid fa-hand-pointer mr-2"></i>
+              手動で選ぶ
+            </button>
           </div>
+
+          {selectionMode === 'auto' ? (
+            <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100">
+              <p className="text-xs text-indigo-600 font-bold mb-3">
+                <i className="fa-solid fa-filter mr-1"></i>
+                型プール（どのアカウントの型を使う？）
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedAccountFilter(null)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    selectedAccountFilter === null
+                      ? 'bg-indigo-500 text-white'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300'
+                  }`}
+                >
+                  全パターン
+                </button>
+                {Object.keys(accountGroups).map(account => {
+                  const pats = accountGroups[account];
+                  const dayCount = new Set(pats.map(p => p.capture_date).filter(Boolean)).size;
+                  return (
+                    <button
+                      key={account}
+                      onClick={() => setSelectedAccountFilter(account)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        selectedAccountFilter === account
+                          ? 'bg-indigo-500 text-white'
+                          : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300'
+                      }`}
+                    >
+                      {account}（{dayCount}日分）
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-3">
+                伝えたいことに合わせてAIが最適な型を自動選択します
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {patterns.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPatternId(p.id)}
+                  className={`px-4 py-3 rounded-2xl text-left border-2 transition-all ${
+                    selectedPatternId === p.id
+                      ? 'border-pink-500 bg-pink-50 text-pink-700'
+                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+                  }`}
+                >
+                  <div className="text-xs font-black opacity-50 mb-1">PATTERN</div>
+                  <div className="font-bold text-sm line-clamp-1">{p.name}</div>
+                  {p.account_name && (
+                    <div className="text-[10px] text-slate-400 mt-1">{p.account_name}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>

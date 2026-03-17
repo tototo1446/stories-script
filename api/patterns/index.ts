@@ -6,10 +6,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase
+    const { account_name } = req.query;
+    let query = supabase
       .from('competitor_patterns')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
+
+    if (account_name && typeof account_name === 'string') {
+      query = query.eq('account_name', account_name);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ status: 'error', message: error.message });
     return res.json({ status: 'success', data: data || [] });

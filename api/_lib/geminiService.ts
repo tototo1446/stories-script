@@ -1,6 +1,12 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import type { Brand, CompetitorPattern, StorySlide } from './types.js';
 
+export interface PatternSelectionResult {
+  selectedPatternId: string;
+  selectedPatternName: string;
+  reason: string;
+}
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 const STORIES_KNOWLEDGE_PRESET = `## Instagramストーリーズ基礎知識
@@ -258,4 +264,82 @@ ${userPreferences}
   });
 
   return JSON.parse(response.text ?? '[]');
+};
+
+export const selectBestPattern = async (
+  patterns: CompetitorPattern[],
+  topic: string
+): Promise<PatternSelectionResult> => {
+  // 候補が1つならGemini呼び出しスキップ
+  if (patterns.length === 1) {
+    return {
+      selectedPatternId: patterns[0].id,
+      selectedPatternName: patterns[0].name,
+      reason: '候補が1つのため自動選択'
+    };
+  }
+
+  const model = 'gemini-2.0-flash';
+
+  const patternSummaries = patterns.map((p, idx) => {
+    const roles = p.skeleton.skeleton.map(s => s.role).join(' → ');
+    return `[${idx + 1}] ID: ${p.id}
+  名前: ${p.name}
+  カテゴリ: ${p.skeleton.category}
+  最適な用途: ${p.skeleton.summary.best_for}
+  構成フロー: ${roles}
+  スライド数: ${p.skeleton.total_slides}枚`;
+  }).join('\n\n');
+
+  const prompt = `あなたはInstagramストーリーズの構成選択アドバイザーです。
+
+以下の「今日伝えたいこと」に最も適した構成パターン（型）を1つ選んでください。
+
+## 今日のトピック
+${topic}
+
+## 候補パターン一覧
+${patternSummaries}
+
+## 選択基準
+- トピックの内容（商品紹介、裏側暴露、教育系、共感系など）と型の相性
+- 伝えたいメッセージの流れと構成フローのマッチ度
+- ターゲットへの訴求力
+
+最も適したパターンのIDと、選んだ理由を簡潔に返してください。`;
+
+  const response = await ai.models.generateContent({
+    model,
+    contents: prompt,
+    config: {
+      temperature: 0.2,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          selected_pattern_id: { type: Type.STRING, description: '選択されたパターンのID（UUID）' },
+          reason: { type: Type.STRING, description: '選択理由（1〜2文）' }
+        },
+        required: ['selected_pattern_id', 'reason']
+      }
+    }
+  });
+
+  const result = JSON.parse(response.text ?? '{}');
+
+  // 選ばれたIDが候補に含まれるか検証、含まれなければ最初の候補を返す
+  const selectedPattern = patterns.find(p => p.id === result.selected_pattern_id);
+  if (!selectedPattern) {
+    return {
+      selectedPatternId: patterns[0].id,
+      selectedPatternName: patterns[0].name,
+      reason: result.reason || 'AIが選択（フォールバック）'
+    };
+  }
+
+  return {
+    selectedPatternId: selectedPattern.id,
+    selectedPatternName: selectedPattern.name,
+    reason: result.reason
+  };
 };
