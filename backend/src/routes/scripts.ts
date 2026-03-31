@@ -93,7 +93,8 @@ router.post('/generate', async (req: Request, res: Response, next) => {
       pattern,
       topic,
       vibe,
-      userPreferences
+      userPreferences,
+      brand.knowledge_sources || []
     );
 
     // 生成された台本をデータベースに保存

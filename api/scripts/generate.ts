@@ -118,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.warn('成長ログ取得に失敗（スキップ）:', err);
     }
 
-    const slides = await generateScript(brand, pattern, topic, vibe, userPreferences);
+    const slides = await generateScript(brand, pattern, topic, vibe, userPreferences, brand.knowledge_sources || []);
     const legalWarnings = checkLegalCompliance(slides);
 
     // 常にDBに保存（pattern.idがUUIDなら保存、それ以外はnull）

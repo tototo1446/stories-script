@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { Brand, CompetitorPattern, StorySlide } from '../types';
+import { Brand, CompetitorPattern, StorySlide, KnowledgeSource } from '../types';
 import { createError } from '../middleware/errorHandler';
 
 if (!process.env.GEMINI_API_KEY) {
@@ -36,6 +36,19 @@ const STORIES_KNOWLEDGE_PRESET = `## Instagramストーリーズ基礎知識
 ### 投稿タイミング
 - 通勤時間帯（7:00-9:00）、昼休み（12:00-13:00）、夜のリラックスタイム（20:00-22:00）が高反応
 - 複数枚を一度に投稿するより、時間を空けて投稿する方がリーチが伸びやすい
+
+### デザイン・レイアウトガイドライン
+- セーフエリア: 上部15%（アイコン・名前の表示領域）と下部15%（返信バー・スワイプ領域）にはテキストを配置しない
+- メインコンテンツの推奨配置: 画面中央60%の領域（上部20%〜下部20%の間）
+- テキスト配置パターン:
+  - 中央寄せ: フックや強調したいキーメッセージ向け
+  - 上部寄せ（セーフエリア直下）: 導入・補足テキスト向け
+  - 下部寄せ（セーフエリア直上）: CTA向け
+- 背景とテキストのコントラスト比は4.5:1以上を推奨（暗い背景に白文字、または半透明オーバーレイ）
+- テキストサイズ: タイトル級は24-32pt相当、本文は16-20pt相当
+- 1画面に視覚的な焦点は1つだけ（テキスト+画像の場合は上下or左右で分割）
+- インタラクティブ要素（アンケート・クイズ）は画面中央やや下に配置が最適
+- GIFスタンプやメンションは視線の流れ（Z型 or F型）を考慮して配置
 
 ### やってはいけないこと
 - 文字だらけの画面（1枚に情報を詰め込みすぎ）
@@ -276,7 +289,8 @@ export const generateScript = async (
   pattern: CompetitorPattern,
   topic: string,
   vibe: string,
-  userPreferences?: string
+  userPreferences?: string,
+  knowledgeSources?: KnowledgeSource[]
 ): Promise<StorySlide[]> => {
   const model = 'gemini-2.0-flash';
 
@@ -284,6 +298,17 @@ export const generateScript = async (
     .map((s: { slide_number: number; role: string; copy_pattern: string; visual_instruction: string; recommended_elements: string[] }) =>
       `  Slide ${s.slide_number}: 役割「${s.role}」/ コピー型「${s.copy_pattern}」/ 撮影指示「${s.visual_instruction}」/ 推奨要素: ${s.recommended_elements.join(', ')}`)
     .join('\n');
+
+  // ナレッジソースの構築
+  const knowledgeSection = knowledgeSources && knowledgeSources.length > 0
+    ? `\n### 1.5 ブランドナレッジ（商品資料・運用ノウハウ）
+以下はブランドが蓄積した追加情報です。台本の内容・トーン・訴求ポイントに必ず反映してください。
+${knowledgeSources.slice(0, 10).map((ks: KnowledgeSource, i: number) => {
+  const truncated = ks.content.length > 2000 ? ks.content.substring(0, 2000) + '...(以下省略)' : ks.content;
+  const categoryLabel = ks.category === 'operation' ? '運用ノウハウ' : ks.category === 'design' ? 'デザイン' : ks.category === 'product' ? '商品情報' : '参考資料';
+  return `\n#### [${i + 1}] ${ks.title}（${categoryLabel}）\n${truncated}`;
+}).join('\n')}\n`
+    : '';
 
   const prompt = `あなたはInstagramストーリーズ台本の専門コピーライターです。
 
@@ -300,7 +325,7 @@ ${STORIES_KNOWLEDGE_PRESET}
 - 商品説明: ${brand.product_description}
 - ターゲット: ${brand.target_audience}
 - ブランドトーン: ${brand.brand_tone}
-
+${knowledgeSection}
 ### 2. 適用する構成パターン（型）
 テンプレート名: ${pattern.name}
 ${skeletonStr}
@@ -322,6 +347,7 @@ ${userPreferences}
 - 「visualGuidance」は撮影者への具体的な指示（背景、構図、使用素材）
 - 「tips」はマーケティング的な補足アドバイス（1文）
 - 「role」はそのスライドの構成上の役割
+- 「layoutGuidance」はストーリーズ画面上でのデザイン指示（テキスト配置位置、文字サイズ、背景色、コントラスト等。例: 「白文字24pt中央配置、背景は商品写真に半透明黒オーバーレイ」）
 - 薬機法・景表法に抵触する断定的表現（「絶対治る」「No.1」等）は避ける
 - ブランドトーンと今日のバイブスを反映した文体にする`;
 
@@ -356,9 +382,13 @@ ${userPreferences}
               tips: {
                 type: Type.STRING,
                 description: 'マーケティング補足アドバイス'
+              },
+              layoutGuidance: {
+                type: Type.STRING,
+                description: 'テキストの画面上の配置位置、文字サイズ、背景色、コントラスト等のレイアウト指示'
               }
             },
-            required: ['id', 'role', 'visualGuidance', 'script', 'tips']
+            required: ['id', 'role', 'visualGuidance', 'script', 'tips', 'layoutGuidance']
           }
         }
       }

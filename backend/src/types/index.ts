@@ -1,10 +1,19 @@
 // Database types
+export interface KnowledgeSource {
+  type: 'url' | 'text';
+  title: string;
+  content: string;
+  category?: 'product' | 'operation' | 'design' | 'general';
+  addedAt: string;
+}
+
 export interface Brand {
   id: string;
   name: string;
   product_description: string;
   target_audience: string;
   brand_tone: string;
+  knowledge_sources: KnowledgeSource[];
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +60,7 @@ export interface StorySlide {
   visualGuidance: string;
   script: string;
   tips: string;
+  layoutGuidance?: string;
 }
 
 export interface ScriptRewrite {

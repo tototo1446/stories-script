@@ -102,6 +102,7 @@ const BrandLibrary: React.FC<BrandLibraryProps> = ({ brandInfo, onBrandUpdate })
           product_description: brand.productDescription,
           target_audience: brand.targetAudience,
           brand_tone: brand.brandTone,
+          knowledge_sources: brand.knowledgeSources || [],
         });
       } else {
         const data = await brandsApi.create({
@@ -109,6 +110,7 @@ const BrandLibrary: React.FC<BrandLibraryProps> = ({ brandInfo, onBrandUpdate })
           product_description: brand.productDescription,
           target_audience: brand.targetAudience,
           brand_tone: brand.brandTone,
+          knowledge_sources: brand.knowledgeSources || [],
         });
         const createdBrand = { ...brand, id: data.id };
         setBrand(createdBrand);

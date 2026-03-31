@@ -37,7 +37,7 @@ router.get('/', async (req: Request, res: Response, next) => {
  */
 router.post('/', async (req: Request, res: Response, next) => {
   try {
-    const { name, product_description, target_audience, brand_tone } = req.body;
+    const { name, product_description, target_audience, brand_tone, knowledge_sources } = req.body;
 
     if (!name || !product_description || !target_audience || !brand_tone) {
       throw createError('すべてのフィールドが必要です', 400);
@@ -49,7 +49,8 @@ router.post('/', async (req: Request, res: Response, next) => {
         name,
         product_description,
         target_audience,
-        brand_tone
+        brand_tone,
+        knowledge_sources: knowledge_sources || []
       })
       .select()
       .single();
@@ -76,13 +77,14 @@ router.post('/', async (req: Request, res: Response, next) => {
 router.put('/:id', async (req: Request, res: Response, next) => {
   try {
     const { id } = req.params;
-    const { name, product_description, target_audience, brand_tone } = req.body;
+    const { name, product_description, target_audience, brand_tone, knowledge_sources } = req.body;
 
     const updateData: Partial<Brand> = {};
     if (name !== undefined) updateData.name = name;
     if (product_description !== undefined) updateData.product_description = product_description;
     if (target_audience !== undefined) updateData.target_audience = target_audience;
     if (brand_tone !== undefined) updateData.brand_tone = brand_tone;
+    if (knowledge_sources !== undefined) updateData.knowledge_sources = knowledge_sources;
 
     if (Object.keys(updateData).length === 0) {
       throw createError('更新するフィールドがありません', 400);

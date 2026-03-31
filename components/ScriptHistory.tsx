@@ -173,6 +173,15 @@ const ScriptHistory: React.FC<ScriptHistoryProps> = ({ onNavigate }) => {
                             <p className="text-xs text-slate-600 italic">"{slide.visualGuidance}"</p>
                           </div>
 
+                          {slide.layoutGuidance && (
+                            <div className="mb-3 p-3 bg-violet-50 rounded-xl border border-violet-100">
+                              <div className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">
+                                <i className="fa-solid fa-layer-group mr-1"></i>レイアウト指示
+                              </div>
+                              <p className="text-xs text-violet-700">{slide.layoutGuidance}</p>
+                            </div>
+                          )}
+
                           <div className="mb-3">
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                               <i className="fa-solid fa-align-left mr-1"></i>文言

@@ -8,12 +8,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query;
 
   if (req.method === 'PUT') {
-    const { name, product_description, target_audience, brand_tone } = req.body;
+    const { name, product_description, target_audience, brand_tone, knowledge_sources } = req.body;
     const updateData: Record<string, any> = {};
     if (name !== undefined) updateData.name = name;
     if (product_description !== undefined) updateData.product_description = product_description;
     if (target_audience !== undefined) updateData.target_audience = target_audience;
     if (brand_tone !== undefined) updateData.brand_tone = brand_tone;
+    if (knowledge_sources !== undefined) updateData.knowledge_sources = knowledge_sources;
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ status: 'error', message: '更新するフィールドがありません' });

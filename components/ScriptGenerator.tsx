@@ -270,6 +270,17 @@ const ScriptGenerator: React.FC<ScriptGeneratorProps> = ({ brandInfo, patterns, 
                   </p>
                 </div>
 
+                {slide.layoutGuidance && (
+                  <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100">
+                    <h4 className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                      <i className="fa-solid fa-layer-group"></i> レイアウト指示
+                    </h4>
+                    <p className="text-sm font-medium text-violet-700 leading-relaxed">
+                      {slide.layoutGuidance}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
                     <i className="fa-solid fa-align-left"></i> 文言（コピペ可）

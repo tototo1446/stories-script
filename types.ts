@@ -22,6 +22,7 @@ export interface KnowledgeSource {
   type: 'url' | 'text';
   title: string;
   content: string;
+  category?: 'product' | 'operation' | 'design' | 'general';
   addedAt: string;
 }
 
@@ -62,6 +63,7 @@ export interface StorySlide {
   visualGuidance: string;
   script: string;
   tips: string;
+  layoutGuidance?: string;
 }
 
 export interface LegalWarning {

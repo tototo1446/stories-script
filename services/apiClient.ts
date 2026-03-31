@@ -68,6 +68,7 @@ export const brandsApi = {
     product_description: string;
     target_audience: string;
     brand_tone: string;
+    knowledge_sources?: any[];
   }): Promise<any> {
     return request('/api/brands', {
       method: 'POST',
@@ -80,6 +81,7 @@ export const brandsApi = {
     product_description: string;
     target_audience: string;
     brand_tone: string;
+    knowledge_sources: any[];
   }>): Promise<any> {
     return request(`/api/brands/${id}`, {
       method: 'PUT',

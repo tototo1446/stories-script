@@ -20,14 +20,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const { name, product_description, target_audience, brand_tone } = req.body;
+    const { name, product_description, target_audience, brand_tone, knowledge_sources } = req.body;
     if (!name || !product_description || !target_audience || !brand_tone) {
       return res.status(400).json({ status: 'error', message: 'すべてのフィールドが必要です' });
     }
 
     const { data, error } = await supabase
       .from('brands')
-      .insert({ name, product_description, target_audience, brand_tone })
+      .insert({ name, product_description, target_audience, brand_tone, knowledge_sources: knowledge_sources || [] })
       .select()
       .single();
 
