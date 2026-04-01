@@ -59,7 +59,7 @@ export const analyzeCompetitorImages = async (
   category?: string,
   focusPoint?: string
 ): Promise<CompetitorPattern['skeleton']> => {
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
 
   const imageParts = images.map(img => {
     const base64Data = img.includes(',') ? img.split(',')[1] : img;
@@ -179,7 +179,7 @@ export const rewriteScript = async (
   originalText: string,
   instruction: string
 ): Promise<string> => {
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
 
   const prompt = `以下の台本テキストを、ユーザーの指示に従ってリライトしてください。
 
@@ -209,7 +209,7 @@ export const generateScript = async (
   knowledgeSources?: KnowledgeSource[],
   learningRules?: LearningRule[]
 ): Promise<StorySlide[]> => {
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
 
   const skeletonStr = pattern.skeleton.skeleton
     .map((s) =>
@@ -333,7 +333,7 @@ export const selectBestPattern = async (
     };
   }
 
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
 
   const patternSummaries = patterns.map((p, idx) => {
     const roles = p.skeleton.skeleton.map(s => s.role).join(' → ');
@@ -445,7 +445,7 @@ export const extractLearningRules = async (
   content?: string,
   images?: string[]
 ): Promise<{ title: string; source_summary: string; rules: LearningRule[] }> => {
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
 
   if (images && images.length > 0) {
     const imageParts = images.map(img => {
