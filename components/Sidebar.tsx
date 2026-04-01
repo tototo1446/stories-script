@@ -14,6 +14,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
     { id: View.STRATEGY_EDITOR, label: '戦略構築 (AI解析)', icon: 'fa-brain' },
     { id: View.GENERATOR, label: '今日の台本作成', icon: 'fa-pen-to-square' },
     { id: View.SCRIPT_HISTORY, label: '生成履歴', icon: 'fa-clock-rotate-left' },
+    { id: View.LEARNING_CENTER, label: '学習センター', icon: 'fa-graduation-cap' },
     { id: View.GROWTH_LOG, label: '学習ログ', icon: 'fa-arrow-up-right-dots' },
   ];
 

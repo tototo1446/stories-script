@@ -88,13 +88,29 @@ router.post('/generate', async (req: Request, res: Response, next) => {
     }
 
     // Gemini APIで台本生成（修正傾向を反映）
+    // 有効な学習ルールを取得
+    let flatLearningRules: any[] = [];
+    try {
+      const { data: learningRuleSets } = await supabase
+        .from('learning_rules')
+        .select('rules')
+        .eq('is_active', true);
+
+      if (learningRuleSets && learningRuleSets.length > 0) {
+        flatLearningRules = learningRuleSets.flatMap((rs: any) => rs.rules || []);
+      }
+    } catch (err) {
+      console.warn('学習ルール取得に失敗（スキップ）:', err);
+    }
+
     const slides = await generateScript(
       brand,
       pattern,
       topic,
       vibe,
       userPreferences,
-      brand.knowledge_sources || []
+      brand.knowledge_sources || [],
+      flatLearningRules
     );
 
     // 生成された台本をデータベースに保存

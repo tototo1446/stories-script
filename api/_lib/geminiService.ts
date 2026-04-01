@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import type { Brand, CompetitorPattern, StorySlide, KnowledgeSource } from './types.js';
+import type { Brand, CompetitorPattern, StorySlide, KnowledgeSource, LearningRule } from './types.js';
 
 export interface PatternSelectionResult {
   selectedPatternId: string;
@@ -206,7 +206,8 @@ export const generateScript = async (
   topic: string,
   vibe: string,
   userPreferences?: string,
-  knowledgeSources?: KnowledgeSource[]
+  knowledgeSources?: KnowledgeSource[],
+  learningRules?: LearningRule[]
 ): Promise<StorySlide[]> => {
   const model = 'gemini-2.0-flash';
 
@@ -226,6 +227,32 @@ ${knowledgeSources.slice(0, 10).map((ks, i) => {
 }).join('\n')}\n`
     : '';
 
+  // 学習ルールの構築
+  const learningRulesSection = learningRules && learningRules.length > 0
+    ? (() => {
+        const grouped: Record<string, LearningRule[]> = {};
+        const rules = learningRules.slice(0, 30);
+        let totalChars = 0;
+        for (const r of rules) {
+          if (totalChars > 3000) break;
+          if (!grouped[r.category]) grouped[r.category] = [];
+          grouped[r.category].push(r);
+          totalChars += r.rule.length;
+        }
+        const categoryLabels: Record<string, string> = {
+          tone: 'トーン・文体', structure: '構成ルール', expression: '表現ルール',
+          visual: 'ビジュアル', compliance: 'コンプライアンス', strategy: '戦略・方針'
+        };
+        const sections = Object.entries(grouped).map(([cat, items]) =>
+          `#### [${categoryLabels[cat] || cat}]\n${items.map(r => `- ${r.rule}（重要度: ${r.importance === 'high' ? '高' : r.importance === 'medium' ? '中' : '低'}）`).join('\n')}`
+        ).join('\n\n');
+        return `\n### 1.6 学習済みルール（ユーザーが設定した台本生成ルール）
+以下のルールはユーザーが資料から抽出し承認したものです。台本生成時に必ず遵守してください。
+
+${sections}\n`;
+      })()
+    : '';
+
   const prompt = `あなたはInstagramストーリーズ台本の専門コピーライターです。
 
 ${STORIES_KNOWLEDGE_PRESET}
@@ -241,7 +268,7 @@ ${STORIES_KNOWLEDGE_PRESET}
 - 商品説明: ${brand.product_description}
 - ターゲット: ${brand.target_audience}
 - ブランドトーン: ${brand.brand_tone}
-${knowledgeSection}
+${knowledgeSection}${learningRulesSection}
 ### 2. 適用する構成パターン（型）
 テンプレート名: ${pattern.name}
 ${skeletonStr}
@@ -369,4 +396,103 @@ ${patternSummaries}
     selectedPatternName: selectedPattern.name,
     reason: result.reason
   };
+};
+
+const LEARNING_RULES_EXTRACTION_PROMPT = `あなたはInstagramストーリーズの台本生成に特化したルール抽出の専門家です。
+
+以下の資料を分析し、「Instagramストーリーズの台本を生成する際に守るべきルール・方針」を構造化して抽出してください。
+
+## 抽出すべきルールのカテゴリ
+
+1. **tone（トーン・文体）**: 言葉遣い、敬語レベル、語尾パターン、絵文字使用ルール
+2. **structure（構成ルール）**: スライド枚数、フック→CTAの流れ、必須スライド
+3. **expression（表現ルール）**: 使うべき/避けるべき言い回し、NGワード、ブランド用語
+4. **visual（ビジュアルルール）**: 配色、フォント、画像スタイル、レイアウト指定
+5. **compliance（法令・コンプライアンス）**: 薬機法、景表法、業界固有の規制
+6. **strategy（戦略・方針）**: ターゲット訴求、差別化ポイント、季節性
+
+## ルール抽出の指針
+
+- 具体的で実行可能なルールを抽出する（「良い文章を書く」のような抽象的なものは不可）
+- 台本生成AIが即座に適用できる形式で記述する
+- 資料に明示されていない暗黙のルールも、文脈から推測して抽出する
+- 各ルールには「なぜこのルールが重要か」のcontextを付ける
+- 重要度（high/medium/low）を判定する`;
+
+const LEARNING_RULES_RESPONSE_SCHEMA = {
+  type: Type.OBJECT as const,
+  properties: {
+    title: { type: Type.STRING, description: '資料の内容を端的に表すタイトル（20文字以内）' },
+    source_summary: { type: Type.STRING, description: '資料の概要（100文字以内）' },
+    rules: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          category: { type: Type.STRING, description: 'tone|structure|expression|visual|compliance|strategy' },
+          rule: { type: Type.STRING, description: 'ルールの内容（1文で具体的に）' },
+          importance: { type: Type.STRING, description: 'high|medium|low' },
+          context: { type: Type.STRING, description: 'このルールが重要な理由' }
+        },
+        required: ['category', 'rule', 'importance', 'context'] as const
+      }
+    }
+  },
+  required: ['title', 'source_summary', 'rules'] as const
+};
+
+export const extractLearningRules = async (
+  content?: string,
+  images?: string[]
+): Promise<{ title: string; source_summary: string; rules: LearningRule[] }> => {
+  const model = 'gemini-2.0-flash';
+
+  if (images && images.length > 0) {
+    const imageParts = images.map(img => {
+      const base64Data = img.includes(',') ? img.split(',')[1] : img;
+      const mimeType = img.startsWith('data:application/pdf') ? 'application/pdf' : 'image/jpeg';
+      return { inlineData: { data: base64Data, mimeType } };
+    });
+
+    const prompt = `${LEARNING_RULES_EXTRACTION_PROMPT}
+
+## 入力資料
+
+アップロードされた画像/PDF資料の内容を読み取り、ルールを抽出してください。
+まず画像/PDF内のテキストと図表を正確に読み取ってから、ルール抽出に進んでください。`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: { parts: [...imageParts, { text: prompt }] },
+      config: {
+        temperature: 0.3,
+        responseMimeType: 'application/json',
+        responseSchema: LEARNING_RULES_RESPONSE_SCHEMA
+      }
+    });
+
+    return JSON.parse(response.text ?? '{"title":"","source_summary":"","rules":[]}');
+  }
+
+  if (content) {
+    const prompt = `${LEARNING_RULES_EXTRACTION_PROMPT}
+
+## 入力資料
+
+${content}`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        temperature: 0.3,
+        responseMimeType: 'application/json',
+        responseSchema: LEARNING_RULES_RESPONSE_SCHEMA
+      }
+    });
+
+    return JSON.parse(response.text ?? '{"title":"","source_summary":"","rules":[]}');
+  }
+
+  throw new Error('テキストまたは画像のどちらかが必要です');
 };

@@ -63,6 +63,24 @@ export interface GeneratedScript {
   created_at: string;
 }
 
+export interface LearningRule {
+  category: string;
+  rule: string;
+  importance: string;
+  context: string;
+}
+
+export interface LearningRuleSet {
+  id: string;
+  title: string;
+  source_type: string;
+  source_summary: string;
+  rules: LearningRule[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GrowthLog {
   id: string;
   script_id: string;

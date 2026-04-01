@@ -118,7 +118,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.warn('成長ログ取得に失敗（スキップ）:', err);
     }
 
-    const slides = await generateScript(brand, pattern, topic, vibe, userPreferences, brand.knowledge_sources || []);
+    // 有効な学習ルールを取得
+    let flatLearningRules: any[] = [];
+    try {
+      const { data: learningRuleSets } = await supabase
+        .from('learning_rules')
+        .select('rules')
+        .eq('is_active', true);
+
+      if (learningRuleSets && learningRuleSets.length > 0) {
+        flatLearningRules = learningRuleSets.flatMap((rs: any) => rs.rules || []);
+      }
+    } catch (err) {
+      console.warn('学習ルール取得に失敗（スキップ）:', err);
+    }
+
+    const slides = await generateScript(brand, pattern, topic, vibe, userPreferences, brand.knowledge_sources || [], flatLearningRules);
     const legalWarnings = checkLegalCompliance(slides);
 
     // 常にDBに保存（pattern.idがUUIDなら保存、それ以外はnull）

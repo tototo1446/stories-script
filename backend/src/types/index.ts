@@ -44,6 +44,24 @@ export interface CompetitorPattern {
   updated_at: string;
 }
 
+export interface LearningRule {
+  category: string;
+  rule: string;
+  importance: string;
+  context: string;
+}
+
+export interface LearningRuleSet {
+  id: string;
+  title: string;
+  source_type: string;
+  source_summary: string;
+  rules: LearningRule[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GeneratedScript {
   id: string;
   brand_id: string;

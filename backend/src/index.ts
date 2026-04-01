@@ -6,6 +6,7 @@ import brandRoutes from './routes/brands';
 import patternRoutes from './routes/patterns';
 import scriptRoutes from './routes/scripts';
 import growthLogRoutes from './routes/growthLogs';
+import learningRuleRoutes from './routes/learningRules';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +29,7 @@ app.use('/api/brands', brandRoutes);
 app.use('/api/patterns', patternRoutes);
 app.use('/api/scripts', scriptRoutes);
 app.use('/api/growth-logs', growthLogRoutes);
+app.use('/api/learning-rules', learningRuleRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

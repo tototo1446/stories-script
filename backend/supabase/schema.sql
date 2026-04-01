@@ -70,6 +70,20 @@ CREATE INDEX IF NOT EXISTS idx_generated_scripts_created_at ON generated_scripts
 CREATE INDEX IF NOT EXISTS idx_script_rewrites_script_id ON script_rewrites(script_id);
 CREATE INDEX IF NOT EXISTS idx_growth_logs_script_id ON growth_logs(script_id);
 
+-- Learning rules table
+CREATE TABLE IF NOT EXISTS learning_rules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  source_type TEXT NOT NULL DEFAULT 'text',
+  source_summary TEXT,
+  rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_learning_rules_is_active ON learning_rules(is_active);
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -87,5 +101,10 @@ CREATE TRIGGER update_brands_updated_at
 
 CREATE TRIGGER update_competitor_patterns_updated_at
   BEFORE UPDATE ON competitor_patterns
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_learning_rules_updated_at
+  BEFORE UPDATE ON learning_rules
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();

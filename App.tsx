@@ -8,6 +8,7 @@ import ScriptGenerator from './components/ScriptGenerator';
 import BrandLibrary from './components/BrandLibrary';
 import GrowthLogComponent from './components/GrowthLog';
 import ScriptHistory from './components/ScriptHistory';
+import LearningCenter from './components/LearningCenter';
 import { brandsApi, patternsApi } from './services/apiClient';
 
 const App: React.FC = () => {
@@ -111,10 +112,12 @@ const App: React.FC = () => {
         return <ScriptHistory onNavigate={setCurrentView} />;
       case View.GROWTH_LOG:
         return <GrowthLogComponent onNavigate={setCurrentView} />;
+      case View.LEARNING_CENTER:
+        return <LearningCenter />;
       case View.BRAND_LIBRARY:
         return (
-          <BrandLibrary 
-            brandInfo={brandInfo} 
+          <BrandLibrary
+            brandInfo={brandInfo}
             onBrandUpdate={setBrandInfo}
           />
         );

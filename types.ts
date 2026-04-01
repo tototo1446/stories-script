@@ -5,7 +5,8 @@ export enum View {
   STRATEGY_EDITOR = 'STRATEGY_EDITOR',
   GENERATOR = 'GENERATOR',
   GROWTH_LOG = 'GROWTH_LOG',
-  SCRIPT_HISTORY = 'SCRIPT_HISTORY'
+  SCRIPT_HISTORY = 'SCRIPT_HISTORY',
+  LEARNING_CENTER = 'LEARNING_CENTER'
 }
 
 export interface BrandInfo {
@@ -88,6 +89,24 @@ export interface GeneratedScript {
   vibe: string;
   slides: StorySlide[];
   created_at: string;
+}
+
+export interface LearningRule {
+  category: 'tone' | 'structure' | 'expression' | 'visual' | 'compliance' | 'strategy';
+  rule: string;
+  importance: 'high' | 'medium' | 'low';
+  context: string;
+}
+
+export interface LearningRuleSet {
+  id: string;
+  title: string;
+  source_type: 'text' | 'pdf' | 'image';
+  source_summary: string;
+  rules: LearningRule[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface GrowthLog {

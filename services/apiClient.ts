@@ -218,6 +218,54 @@ export const growthLogsApi = {
   },
 };
 
+// Learning Rules API
+export const learningRulesApi = {
+  async getAll(): Promise<any[]> {
+    const result = await request<{ data: any[] }>('/api/learning-rules');
+    return Array.isArray(result) ? result : result.data || [];
+  },
+
+  async analyze(data: {
+    source_type: 'text' | 'pdf' | 'image';
+    content?: string;
+    images?: string[];
+  }): Promise<any> {
+    return request('/api/learning-rules/analyze', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async save(data: {
+    title: string;
+    source_type: string;
+    source_summary: string;
+    rules: any[];
+  }): Promise<any> {
+    return request('/api/learning-rules', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async update(id: string, updates: {
+    title?: string;
+    rules?: any[];
+    is_active?: boolean;
+  }): Promise<any> {
+    return request(`/api/learning-rules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    await request(`/api/learning-rules/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // Dashboard Stats API
 export const statsApi = {
   async getDashboardStats(): Promise<{
